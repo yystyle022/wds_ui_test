@@ -28,11 +28,20 @@ cd /opt/wds_ui_test
 cd /opt/wds_ui_test
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+
+# 先升级 pip/setuptools/wheel，避免 Python 3.12 下因旧版 setuptools
+# 依赖已被移除的标准库 distutils 而导致源码编译失败
+pip install --upgrade pip setuptools wheel
+
+# --prefer-binary 优先使用预编译 wheel，避免部分包（如 gevent）在
+# 国内镜像上被迫走源码编译
+pip install --prefer-binary -r requirements.txt
 
 # 安装 Playwright 浏览器及系统依赖（headless 自动化必需）
 playwright install --with-deps chromium
 ```
+
+> 如果服务器 Python 版本较新（3.12+）且仍然遇到某个包源码编译报错，优先确认该包是否发布了对应 Python 版本的预编译 wheel，必要时改用 Python 3.10/3.11 创建虚拟环境（`python3.10 -m venv venv`），兼容性更好。
 
 ## 4. 构建前端
 
@@ -105,7 +114,8 @@ sudo ufw enable
 cd /opt/wds_ui_test
 git pull
 source venv/bin/activate
-pip install -r requirements.txt
+pip install --upgrade pip setuptools wheel
+pip install --prefer-binary -r requirements.txt
 cd frontend && npm install && npm run build
 sudo systemctl restart wds-backend
 ```
