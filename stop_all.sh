@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 前后端一起停止脚本
+# 停止脚本（对应 start_all_background.sh：只有后端一个后台进程）
 
 if [ -f backend/server.pid ]; then
     PID=$(cat backend/server.pid)
@@ -12,14 +12,5 @@ else
     pkill -f "python app.py"
 fi
 
-if [ -f frontend/frontend.pid ]; then
-    PID=$(cat frontend/frontend.pid)
-    echo "停止前端 (PID: $PID)..."
-    kill $PID
-    rm frontend/frontend.pid
-else
-    echo "未找到 frontend/frontend.pid，尝试查找前端进程..."
-    pkill -f "vite"
-fi
+echo "已停止"
 
-echo "前后端均已停止"

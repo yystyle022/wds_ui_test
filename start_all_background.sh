@@ -1,6 +1,13 @@
 #!/bin/bash
 
-# 前后端一起后台启动脚本
+# 前后端一键后台启动脚本（生产模式：构建前端静态文件，后端统一对外提供服务）
+
+# ---------- 前端构建 ----------
+echo "构建前端静态文件..."
+cd frontend
+npm install
+npm run build
+cd ..
 
 # ---------- 后端 ----------
 echo "在8081端口后台启动后端..."
@@ -16,14 +23,6 @@ echo $! > server.pid
 echo "后端已启动，PID: $(cat server.pid)，日志: backend/server.log"
 cd ..
 
-# ---------- 前端 ----------
-echo "在5173端口后台启动前端（开发模式，代理 /api 到 8081）..."
-
-cd frontend
-nohup npm run dev > frontend.log 2>&1 &
-echo $! > frontend.pid
-echo "前端已启动，PID: $(cat frontend.pid)，日志: frontend/frontend.log"
-cd ..
-
 echo ""
-echo "前后端均已后台启动完成。"
+echo "启动完成，访问 http://<服务器IP>:8081 查看完整前后端页面。"
+
