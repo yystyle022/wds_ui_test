@@ -20,7 +20,7 @@
             >
               <img
                 v-if="collapsed"
-                src="./assets/logo.png"
+                src="/logo.png"
                 alt="Logo"
                 class="platform-logo-small"
               />
