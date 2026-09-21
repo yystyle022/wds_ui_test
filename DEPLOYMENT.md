@@ -6,12 +6,22 @@
 
 ```bash
 sudo apt update
-sudo apt install -y git python3 python3-venv python3-pip nginx curl
+sudo apt install -y git nginx curl software-properties-common
+
+# 本项目的 requirements.txt 里锁定了大量旧版本包（numpy/pandas/pydantic/gevent 等），
+# 是从 Python 3.10 环境冻结出来的。Ubuntu 22.04+ 自带的 python3 可能是 3.11/3.12，
+# 直接用会导致多个包源码编译失败甚至编译成功但行为不兼容。
+# 因此这里额外安装 Python 3.10，专门给该项目使用。
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install -y python3.10 python3.10-venv python3.10-dev
 
 # 安装 Node.js 18.x
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
+
+> 如果你的服务器已经有 Python 3.10/3.11，可以跳过 deadsnakes 步骤，直接用系统自带的 3.10/3.11 创建虚拟环境。**不建议用 3.12+**，本项目依赖版本没有跟进适配。
 
 ## 2. 拉取项目代码
 
@@ -26,22 +36,18 @@ cd /opt/wds_ui_test
 
 ```bash
 cd /opt/wds_ui_test
-python3 -m venv venv
+python3.10 -m venv venv
 source venv/bin/activate
 
-# 先升级 pip/setuptools/wheel，避免 Python 3.12 下因旧版 setuptools
-# 依赖已被移除的标准库 distutils 而导致源码编译失败
 pip install --upgrade pip setuptools wheel
-
-# --prefer-binary 优先使用预编译 wheel，避免部分包（如 gevent）在
-# 国内镜像上被迫走源码编译
 pip install --prefer-binary -r requirements.txt
 
 # 安装 Playwright 浏览器及系统依赖（headless 自动化必需）
 playwright install --with-deps chromium
 ```
 
-> 如果服务器 Python 版本较新（3.12+）且仍然遇到某个包源码编译报错，优先确认该包是否发布了对应 Python 版本的预编译 wheel，必要时改用 Python 3.10/3.11 创建虚拟环境（`python3.10 -m venv venv`），兼容性更好。
+> 如果之前已经用系统默认 Python（3.12）创建过 `venv` 目录，先删除重建：
+> `rm -rf venv && python3.10 -m venv venv`
 
 ## 4. 构建前端
 
@@ -125,6 +131,7 @@ sudo systemctl restart wds-backend
 - **Playwright 报浏览器缺失**：重新执行 `playwright install --with-deps chromium`。
 - **端口被占用**：`sudo lsof -i :8081` 查看占用进程，或修改 `wds-backend.service` 里的 `PORT` 环境变量。
 - **静态资源 404**：确认执行过 `npm run build`，且 `frontend/dist` 目录存在。
+- **`pip install` 报 `distutils`/`pkgutil.ImpImporter`/Cython 编译等错误**：说明用的是 Python 3.12（或更新版本）创建的虚拟环境，与 `requirements.txt` 里锁定的旧版本包不兼容。删除 `venv` 后用 `python3.10 -m venv venv` 重新创建，参考第 3 步。
 - **截图/日志目录权限问题**：确保 systemd 里配置的 `User`（如 `www-data`）对 `backend/screenshots` 等目录有写权限：
   ```bash
   sudo chown -R www-data:www-data /opt/wds_ui_test/backend
