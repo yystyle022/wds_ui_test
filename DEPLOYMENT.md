@@ -6,22 +6,33 @@
 
 ```bash
 sudo apt update
-sudo apt install -y git nginx curl software-properties-common
-
-# 本项目的 requirements.txt 里锁定了大量旧版本包（numpy/pandas/pydantic/gevent 等），
-# 是从 Python 3.10 环境冻结出来的。Ubuntu 22.04+ 自带的 python3 可能是 3.11/3.12，
-# 直接用会导致多个包源码编译失败甚至编译成功但行为不兼容。
-# 因此这里额外安装 Python 3.10，专门给该项目使用。
-sudo add-apt-repository -y ppa:deadsnakes/ppa
-sudo apt update
-sudo apt install -y python3.10 python3.10-venv python3.10-dev
+sudo apt install -y git nginx curl build-essential libssl-dev zlib1g-dev \
+  libbz2-dev libreadline-dev libsqlite3-dev libffi-dev liblzma-dev
 
 # 安装 Node.js 18.x
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
-> 如果你的服务器已经有 Python 3.10/3.11，可以跳过 deadsnakes 步骤，直接用系统自带的 3.10/3.11 创建虚拟环境。**不建议用 3.12+**，本项目依赖版本没有跟进适配。
+> 若服务器不是 apt 系（CentOS/RHEL 等），用对应的包管理器（`yum`/`dnf`）安装等价的编译依赖包和 git/nginx/curl 即可，下面步骤不受影响。
+
+### 额外安装 Python 3.10（与系统自带的 3.12 共存，互不影响）
+
+本项目的 `requirements.txt` 锁定了大量旧版本包（numpy/pandas/pydantic/gevent 等），是从 Python 3.10 环境冻结出来的。直接用服务器自带的 Python 3.12 会导致多个包源码编译失败或行为不兼容，因此额外装一个 3.10 专门给本项目的虚拟环境使用，**不会替换或影响系统已有的 3.12**：
+
+```bash
+# 用 pyenv 安装 Python 3.10（不依赖发行版 PPA，通用于任意 Linux 发行版）
+curl https://pyenv.run | bash
+
+# 把 pyenv 加入当前 shell（也可以写入 ~/.bashrc 持久生效）
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+pyenv install 3.10.13
+```
+
+> Ubuntu/Debian 用户也可以用更快的方式：`sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt update && sudo apt install -y python3.10 python3.10-venv python3.10-dev`，效果等价，二选一即可。
 
 ## 2. 拉取项目代码
 
@@ -36,7 +47,11 @@ cd /opt/wds_ui_test
 
 ```bash
 cd /opt/wds_ui_test
-python3.10 -m venv venv
+
+# 用 pyenv 装的 3.10：
+"$HOME/.pyenv/versions/3.10.13/bin/python3.10" -m venv venv
+# 若走的是 deadsnakes/apt 方式，改成：python3.10 -m venv venv
+
 source venv/bin/activate
 
 pip install --upgrade pip setuptools wheel
@@ -47,7 +62,8 @@ playwright install --with-deps chromium
 ```
 
 > 如果之前已经用系统默认 Python（3.12）创建过 `venv` 目录，先删除重建：
-> `rm -rf venv && python3.10 -m venv venv`
+> `rm -rf venv` 后重新执行上面创建 venv 的命令。
+> 用 `python --version`（激活 venv 后）确认是 3.10.x，再继续安装依赖。
 
 ## 4. 构建前端
 
