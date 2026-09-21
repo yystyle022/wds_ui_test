@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm
+
+# IDE / editor
+.vscode/
+.idea/
+.claude/
+.hbuilderx/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test & execution artifacts (large / regenerated at runtime)
+backend/screenshots/
+screenshots/
+backend/server.pid
+backend/server.log
+backend/app.log
+backend/backend_start.log
+backend/backend_start_err.log
+*.log
+*.db
+*.sqlite
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db

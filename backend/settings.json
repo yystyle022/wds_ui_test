@@ -1,0 +1,9 @@
+{
+  "defaultBrowser": "msedge",
+  "defaultHeadless": false,
+  "saveScreenshots": true,
+  "enableMultiThread": false,
+  "defaultEnvironment": "test环境",
+  "useAuthorization": true,
+  "useLoginState": true
+}

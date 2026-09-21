@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "name": "test环境",
+    "description": "测试环境，用来测试",
+    "variables": [],
+    "createTime": "2026-09-16 16:43:40",
+    "project": "万大圣"
+  },
+  {
+    "id": 2,
+    "name": "uat环境",
+    "description": "预发布环境",
+    "variables": [],
+    "createTime": "2026-09-16 16:47:59",
+    "project": "万大圣"
+  }
+]

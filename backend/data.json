@@ -1,0 +1,166 @@
+[
+  {
+    "id": 1,
+    "project": "万大圣",
+    "module": "登录",
+    "page": "登录",
+    "name": "企服平台登录成功",
+    "type": "主流程",
+    "testcase_step": [
+      {
+        "step": 1,
+        "operate": "open_url",
+        "input_value": "",
+        "describe": "打开企服平台首页",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "{{wds_client_host}}",
+        "element_name": "打开企服平台首页"
+      },
+      {
+        "step": 2,
+        "operate": "click",
+        "input_value": "",
+        "describe": "点击登录按钮弹出登录弹窗",
+        "locate_type": "text",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": " 登录/注册 ",
+        "element_name": "点击登录按钮弹出登录弹窗"
+      },
+      {
+        "step": 3,
+        "operate": "click",
+        "input_value": "",
+        "describe": "点击密码登录，使用密码进行登录",
+        "locate_type": "text",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "密码登录",
+        "element_name": "点击密码登录，使用密码进行登录"
+      },
+      {
+        "step": 4,
+        "operate": "input",
+        "input_value": "{{wds_client_login_username}}",
+        "describe": "账号输入框-输入手机号",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "//input[@placeholder=\"请输入手机号\"]",
+        "element_id": 1
+      },
+      {
+        "step": 5,
+        "operate": "input",
+        "input_value": "{{wds_client_login_password}}",
+        "describe": "密码输入框-输入登录密码",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "//input[@placeholder=\"请输入密码\"]",
+        "element_id": 2
+      },
+      {
+        "step": 6,
+        "operate": "click",
+        "input_value": "",
+        "describe": "勾选协议-点击协议勾选框",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "//span[@class=\"login-agreement__check-box\"]",
+        "element_id": 3
+      },
+      {
+        "step": 7,
+        "operate": "click",
+        "input_value": "",
+        "describe": "点击登录按钮",
+        "locate_type": "text",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": " 登 录 ",
+        "element_name": "点击登录按钮"
+      },
+      {
+        "step": 8,
+        "operate": "wait",
+        "input_value": "",
+        "describe": "等待登录跳转首页完成",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "2",
+        "element_name": "等待登录跳转首页完成"
+      },
+      {
+        "step": 9,
+        "operate": "check_element_exists",
+        "input_value": "",
+        "describe": "验证登录成功-登录头像存在",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "//div[@class=\"app-header-avatar\"]",
+        "element_id": 4
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "project": "万大圣",
+    "module": "登录",
+    "page": "登录",
+    "name": "测试登录",
+    "type": "主流程",
+    "testcase_step": [
+      {
+        "step": 1,
+        "operate": "open_url",
+        "input_value": "",
+        "describe": "登录官网",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "{{wds_client_host}}",
+        "element_name": "登录官网"
+      },
+      {
+        "step": 2,
+        "operate": "click",
+        "input_value": "",
+        "describe": "点击登录",
+        "locate_type": "css",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "#app > div > header > div > div.header-right > button.header-login-btn",
+        "element_name": "点击登录"
+      },
+      {
+        "step": 3,
+        "operate": "wait",
+        "input_value": "",
+        "describe": "等待5秒",
+        "locate_type": "xpath",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "5",
+        "element_name": "等待5秒"
+      }
+    ]
+  }
+]

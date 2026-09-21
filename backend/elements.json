@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "project": "万大圣",
+    "module": "登录",
+    "page": "登录",
+    "elementName": "输入手机号",
+    "xpath": "//input[@placeholder=\"请输入手机号\"]",
+    "description": "登录 - 登录 - 输入手机号"
+  },
+  {
+    "id": 2,
+    "project": "万大圣",
+    "module": "登录",
+    "page": "登录",
+    "elementName": "输入登录密码",
+    "xpath": "//input[@placeholder=\"请输入密码\"]",
+    "description": "登录 - 登录 - 输入登录密码"
+  },
+  {
+    "id": 3,
+    "project": "万大圣",
+    "module": "登录",
+    "page": "登录",
+    "elementName": "点击协议勾选框",
+    "xpath": "//span[@class=\"login-agreement__check-box\"]",
+    "description": "登录 - 登录 - 点击协议勾选框"
+  },
+  {
+    "id": 4,
+    "project": "万大圣",
+    "module": "登录",
+    "page": "登录",
+    "elementName": "登录头像存在",
+    "xpath": "//div[@class=\"app-header-avatar\"]",
+    "description": "登录 - 登录 - 登录头像存在"
+  }
+]

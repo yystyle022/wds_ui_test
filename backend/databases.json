@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "万大圣test数据库连接",
+    "type": "mysql",
+    "host": "pc-2ze5721848c0dbb90.rwlb.rds.aliyuncs.com",
+    "port": 3306,
+    "username": "test_esp_wds_svc",
+    "password": "MD2#5xsSU@ywmjSwtd",
+    "database": "test_esp_wds",
+    "project": "万大圣",
+    "environment": "test环境",
+    "description": "test环境数据库信息",
+    "createTime": "2026-09-16 20:12:11"
+  }
+]

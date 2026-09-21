@@ -1,0 +1,62 @@
+[
+  {
+    "name": "mysql_value",
+    "type": "database",
+    "description": "测试",
+    "environment": "test环境",
+    "database": "万大圣test数据库连接",
+    "query": "select * from esp_product where id = 451308151766949"
+  },
+  {
+    "name": "test_Authorization",
+    "type": "auth",
+    "description": "测试录入Authorization环境变量",
+    "environment": "test环境",
+    "project": "万大圣",
+    "value": "123",
+    "matchDomains": [
+      "mysql_value",
+      "https://test-esp.wdsheng.com/"
+    ]
+  },
+  {
+    "name": "wds_client_login_password",
+    "type": "fixed",
+    "description": "万大圣企服平台登录密码",
+    "environment": "test环境",
+    "project": "万大圣",
+    "value": "111111"
+  },
+  {
+    "name": "wds_client_login_username",
+    "type": "fixed",
+    "description": "test环境登录账号",
+    "environment": "test环境",
+    "project": "万大圣",
+    "value": "15100001018"
+  },
+  {
+    "name": "wds_client_login_username",
+    "type": "fixed",
+    "description": "uat环境登录账号",
+    "environment": "uat环境",
+    "project": "万大圣",
+    "value": "15122356779"
+  },
+  {
+    "name": "wds_client_host",
+    "type": "fixed",
+    "description": "万大圣企服务test环境登录host",
+    "environment": "test环境",
+    "project": "万大圣",
+    "value": "https://test-esp.wdsheng.com"
+  },
+  {
+    "name": "wds_management_host",
+    "type": "fixed",
+    "description": "万大圣test环境运营后台host",
+    "environment": "test环境",
+    "project": "万大圣",
+    "value": "https://test-esp-console.wdsheng.com"
+  }
+]
