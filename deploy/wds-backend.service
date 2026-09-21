@@ -1,0 +1,15 @@
+[Unit]
+Description=WDS UI Test Platform - Flask Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/wds_ui_test/backend
+Environment="PORT=8081"
+ExecStart=/opt/wds_ui_test/venv/bin/python /opt/wds_ui_test/backend/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

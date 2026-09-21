@@ -38,6 +38,7 @@ flask_vue/
 ## 快速开始
 
 ### 前置条件
+
 - Python 3.10+
 - Node.js 16+
 
