@@ -15,9 +15,7 @@ sudo apt install -y nodejs
 
 > 若服务器不是 apt 系（CentOS/RHEL 等），用对应的包管理器（`yum`/`dnf`）安装等价的包即可，下面步骤不受影响。
 
-`requirements.txt` 里的依赖版本已经升级为兼容 **Python 3.12** 的版本（numpy/pandas/pydantic/gevent 等都提供了 cp312 预编译 wheel），可以直接用服务器自带的 Python 3.12，不需要额外安装 3.10。
-
-> 如果服务器 Python 版本比 3.12 更旧（如 3.8/3.9）或后续某个包仍报编译错误，可参考文末「附：使用 Python 3.10」用 pyenv 单独装一个 3.10 环境作为备选方案。
+`requirements.txt` 已精简为只包含项目实际用到的 6 个包（Flask、Flask-Cors、playwright、opencv-python、numpy、requests），版本均提供 Python 3.12 预编译 wheel，直接用服务器自带的 Python 3.12 即可，不需要额外安装 3.10。
 
 ## 2. 拉取项目代码
 
@@ -124,35 +122,7 @@ sudo systemctl restart wds-backend
 - **Playwright 报浏览器缺失**：重新执行 `playwright install --with-deps chromium`。
 - **端口被占用**：`sudo lsof -i :8081` 查看占用进程，或修改 `wds-backend.service` 里的 `PORT` 环境变量。
 - **静态资源 404**：确认执行过 `npm run build`，且 `frontend/dist` 目录存在。
-- **`pip install` 仍报 `distutils`/`pkgutil.ImpImporter`/Cython 编译等错误**：说明服务器 Python 版本比 3.12 更旧或更新、或使用了未在 `requirements.txt` 里升级到的第三方包。可参考下方《附：改用 Python 3.10（备选方案）》。
 - **截图/日志目录权限问题**：确保 systemd 里配置的 `User`（如 `www-data`）对 `backend/screenshots` 等目录有写权限：
   ```bash
   sudo chown -R www-data:www-data /opt/wds_ui_test/backend
   ```
-
-## 附：改用 Python 3.10（备选方案）
-
-如果服务器 Python 版本较特殊（如 3.8/3.9，或某些发行版的 3.12 编译方式导致个别包仍然报错），可以额外装一个 Python 3.10，与系统现有 Python **共存、互不影响**：
-
-```bash
-sudo apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
-  libreadline-dev libsqlite3-dev libffi-dev liblzma-dev
-
-curl https://pyenv.run | bash
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-pyenv install 3.10.13
-
-cd /opt/wds_ui_test
-rm -rf venv
-"$HOME/.pyenv/versions/3.10.13/bin/python3.10" -m venv venv
-source venv/bin/activate
-python --version   # 确认是 3.10.x
-
-pip install --upgrade pip setuptools wheel
-pip install --prefer-binary -r requirements.txt
-playwright install --with-deps chromium
-```
-
-> Ubuntu/Debian 也可以用 `sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt install -y python3.10 python3.10-venv python3.10-dev` 代替 pyenv，效果等价。
