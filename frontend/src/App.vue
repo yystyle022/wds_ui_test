@@ -18,12 +18,6 @@
               class="platform-title"
               :style="{ width: collapsed ? '64px' : '240px' }"
             >
-              <img
-                v-if="collapsed"
-                src="/logo.png"
-                alt="Logo"
-                class="platform-logo-small"
-              />
               <h1 v-if="!collapsed">自动化测试平台</h1>
             </div>
 
@@ -252,15 +246,6 @@ export default defineComponent({
   height: 2px;
   background: #18a058;
   box-shadow: 0 0 8px rgba(24, 160, 88, 0.6);
-}
-
-.platform-logo-small {
-  position: relative;
-  z-index: 1;
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(24, 160, 88, 0.25));
 }
 
 .platform-title h1 {
