@@ -214,8 +214,9 @@ def auto_create_missing_elements(testcase_steps, project, module, page):
             ]:
                 continue
 
-            # 元素库只保存XPath定位方式，其他定位方式（css/text）不写入元素库
-            if step.get("locate_type", "xpath") != "xpath":
+            # 元素库支持XPath和CSS两种定位方式，其他定位方式（如text）不写入元素库
+            locate_type = step.get("locate_type", "xpath")
+            if locate_type not in ("xpath", "css"):
                 continue
 
             xpath = step.get("xpath", "").strip()
@@ -242,7 +243,7 @@ def auto_create_missing_elements(testcase_steps, project, module, page):
                     "page": page,
                     "elementName": element_name,
                     "xpath": xpath,
-                    "locate_type": "xpath",
+                    "locate_type": locate_type,
                     "description": f"{module} - {page} - {element_name}",
                 }
 
