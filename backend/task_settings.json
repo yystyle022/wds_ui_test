@@ -1,0 +1,9 @@
+{
+  "defaultBrowser": "chrome",
+  "defaultHeadless": true,
+  "saveScreenshots": true,
+  "enableMultiThread": false,
+  "defaultEnvironment": "uat环境",
+  "useAuthorization": true,
+  "useLoginState": true
+}

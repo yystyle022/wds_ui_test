@@ -111,9 +111,10 @@
                       <n-select
                         v-model:value="step.selectedElement"
                         :options="getElementOptions(step)"
-                        placeholder="选择元素"
+                        placeholder="选择或输入元素名称"
                         clearable
                         filterable
+                        tag
                         @search="(query) => handleElementSearch(step, query)"
                         @update:value="(value) => onElementSelect(step, value)"
                         style="margin-bottom: 8px"
@@ -710,17 +711,27 @@ export default defineComponent({
 
       stepData.xpath = step.xpath || "";
 
-      // 添加元素ID，用于后续同步更新
+      // 处理元素选择
       if (step.selectedElement) {
-        stepData.element_id = parseInt(step.selectedElement);
+        // 尝试转换为数字，如果是数字则是选择的现有元素ID
+        const elementId = parseInt(step.selectedElement);
+        if (!isNaN(elementId)) {
+          // 选择了现有元素
+          stepData.element_id = elementId;
+        } else {
+          // 手动输入的元素名称
+          stepData.element_name = step.selectedElement.trim();
+        }
       }
-      // 如果没有选择元素但有xpath，从描述中提取元素名称
+      // 如果没有选择/输入元素但有xpath，从描述中提取元素名称
       else if (stepData.xpath && step.description) {
         const description = step.description.trim();
         const dashIndex = description.indexOf("-");
-        if (dashIndex > 0 && dashIndex < description.length - 1) {
-          stepData.element_name = description.substring(dashIndex + 1).trim();
+        if (dashIndex > 0) {
+          // 取"-"前面的内容作为元素名称
+          stepData.element_name = description.substring(0, dashIndex).trim();
         } else {
+          // 没有"-"就用整个描述
           stepData.element_name = description;
         }
       }

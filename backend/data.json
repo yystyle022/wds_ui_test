@@ -2,7 +2,7 @@
   {
     "id": 1,
     "project": "万大圣",
-    "module": "登录",
+    "module": "企服平台-登录",
     "page": "登录",
     "name": "企服平台登录成功",
     "type": "主流程",
@@ -120,46 +120,58 @@
   {
     "id": 2,
     "project": "万大圣",
-    "module": "登录",
+    "module": "运营管理平台-登录",
     "page": "登录",
-    "name": "测试登录",
+    "name": "运营管理平台登录成功",
     "type": "主流程",
     "testcase_step": [
       {
         "step": 1,
         "operate": "open_url",
         "input_value": "",
-        "describe": "登录官网",
+        "describe": "打开运营管理平台地址",
         "locate_type": "xpath",
         "expected_value": "",
         "var_name": "",
         "referenced_case_id": null,
-        "xpath": "{{wds_client_host}}",
-        "element_name": "登录官网"
+        "xpath": "{{wds_management_host}}",
+        "element_name": "打开运营管理平台地址"
       },
       {
         "step": 2,
-        "operate": "click",
-        "input_value": "",
-        "describe": "点击登录",
+        "operate": "input",
+        "input_value": "{{asd}}",
+        "describe": "用户名输入框-输入用户名",
         "locate_type": "css",
         "expected_value": "",
         "var_name": "",
         "referenced_case_id": null,
-        "xpath": "#app > div > header > div > div.header-right > button.header-login-btn",
-        "element_name": "点击登录"
+        "xpath": "input[placeholder=\"请输入登录账号\"]",
+        "element_id": 5
       },
       {
         "step": 3,
-        "operate": "wait",
-        "input_value": "",
-        "describe": "等待5秒",
-        "locate_type": "xpath",
+        "operate": "input",
+        "input_value": "YANGyang022",
+        "describe": "密码输入框-输入密码",
+        "locate_type": "css",
         "expected_value": "",
         "var_name": "",
         "referenced_case_id": null,
-        "xpath": "5",
-        "element_name": "等待5秒"
+        "xpath": "input[placeholder=\"请输入登录密码\"]",
+        "element_id": 6
+      },
+      {
+        "step": 4,
+        "operate": "click",
+        "input_value": "",
+        "describe": "点击登录按钮",
+        "locate_type": "text",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "登 录",
+        "element_name": "点击登录按钮"
       }
     ]
   }

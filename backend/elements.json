@@ -34,5 +34,25 @@
     "elementName": "登录头像存在",
     "xpath": "//div[@class=\"app-header-avatar\"]",
     "description": "登录 - 登录 - 登录头像存在"
+  },
+  {
+    "id": 5,
+    "project": "万大圣",
+    "module": "运营管理平台-登录",
+    "page": "登录",
+    "elementName": "输入用户名",
+    "xpath": "input[placeholder=\"请输入登录账号\"]",
+    "locate_type": "css",
+    "description": "运营管理平台-登录 - 登录 - 输入用户名"
+  },
+  {
+    "id": 6,
+    "project": "万大圣",
+    "module": "运营管理平台-登录",
+    "page": "登录",
+    "elementName": "密码输入框",
+    "xpath": "input[placeholder=\"请输入登录密码\"]",
+    "locate_type": "css",
+    "description": "运营管理平台-登录-登录-密码输入框"
   }
 ]

@@ -214,16 +214,6 @@
               />
             </n-form-item>
 
-            <n-form-item label="环境">
-              <n-select
-                v-model:value="caseSearchForm.environment"
-                placeholder="请选择环境"
-                :options="environmentOptions"
-                clearable
-                style="width: 130px"
-              />
-            </n-form-item>
-
             <div class="search-buttons-wrapper">
               <n-button @click="handleCaseSearch" type="primary" size="small">
                 搜索
@@ -338,8 +328,8 @@
       </template>
     </n-modal>
 
-    <!-- 使用共享的设置弹窗组件 -->
-    <SettingsModal />
+    <!-- 复用用例列表的设置弹窗组件，通过 scope="task" 使用独立的任务设置数据 -->
+    <SettingsModal scope="task" />
   </div>
 </template>
 
@@ -397,7 +387,6 @@ interface CaseSearchForm {
   project: string | null;
   module: string;
   type: string | null;
-  environment: string | null;
 }
 
 interface SearchForm {
@@ -441,11 +430,8 @@ export default defineComponent({
     const message = useMessage();
     const dialog = useDialog();
 
-    // 使用共享的设置逻辑
-    const { handleSettings } = useSettings(message);
-
-    // 添加调试日志
-    console.log("ProjectList组件加载完成，handleSettings:", handleSettings);
+    // 复用共享的设置逻辑，scope="task" 对应独立的任务设置数据（/api/task-settings）
+    const { handleSettings } = useSettings("task", message);
 
     // 数据
     const data = ref<TaskData[]>([]);
@@ -467,7 +453,6 @@ export default defineComponent({
       project: null,
       module: "",
       type: null,
-      environment: null,
     });
 
     // 添加任务相关
@@ -556,7 +541,7 @@ export default defineComponent({
       },
       {
         title: "所属项目",
-        key: "project",
+        key: "client",
         width: 120,
         align: "center",
       },
@@ -689,12 +674,6 @@ export default defineComponent({
       { label: "UI验证", value: "UI验证" },
     ];
 
-    const environmentOptions = [
-      { label: "生产环境", value: "生产环境" },
-      { label: "测试环境", value: "测试环境" },
-      { label: "压测环境", value: "压测环境" },
-    ];
-
     // 表单验证规则
     const addRules = {
       name: {
@@ -737,7 +716,7 @@ export default defineComponent({
 
       if (searchForm.value.project) {
         result = result.filter(
-          (item) => item.project === searchForm.value.project
+          (item) => item.client === searchForm.value.project
         );
       }
 
@@ -779,12 +758,6 @@ export default defineComponent({
       if (caseSearchForm.value.type) {
         result = result.filter(
           (item) => item.type === caseSearchForm.value.type
-        );
-      }
-
-      if (caseSearchForm.value.environment) {
-        result = result.filter(
-          (item) => item.environment === caseSearchForm.value.environment
         );
       }
 
@@ -853,7 +826,6 @@ export default defineComponent({
         project: null,
         module: "",
         type: null,
-        environment: null,
       };
     };
 
@@ -951,7 +923,7 @@ export default defineComponent({
         const response = await axios.post("/api/tasks", {
           name: addForm.value.name,
           description: addForm.value.description,
-          project: addForm.value.project,
+          client: addForm.value.project,  // 后端使用 client 字段
           executionType: addForm.value.executionType,
           scheduleTime: addForm.value.scheduleTime,
           selectedCases: addForm.value.selectedCases,
@@ -981,7 +953,7 @@ export default defineComponent({
         editForm.value = {
           name: task.name,
           description: task.description,
-          project: task.project,
+          project: task.client,  // 后端存储的是 client，映射到前端的 project
           executionType: task.executionType,
           scheduleTime: task.scheduleTime || "",
           selectedCases: [...task.selectedCases],
@@ -1030,7 +1002,7 @@ export default defineComponent({
           {
             name: editForm.value.name,
             description: editForm.value.description,
-            project: editForm.value.project,
+            client: editForm.value.project,  // 后端使用 client 字段
             executionType: editForm.value.executionType,
             scheduleTime: editForm.value.scheduleTime,
             selectedCases: editForm.value.selectedCases,
@@ -1062,40 +1034,36 @@ export default defineComponent({
           content: `确定要执行任务"${task.name}"吗？\n该任务包含 ${task.selectedCases.length} 个用例。`,
           positiveText: "确定",
           negativeText: "取消",
-          onPositiveClick: async () => {
-            const loadingMessage = message.loading("正在执行任务，请稍候...", {
-              duration: 0,
-            });
-            try {
-              console.log(`开始执行任务 ID: ${id}`);
+          onPositiveClick: () => {
+            // 不 await：弹窗立即关闭，任务转为后台执行，报告列表会轮询"执行中"状态
+            message.info(`开始执行任务: ${task.name}`);
 
-              // 调用API执行任务
-              const response = await axios.post(
-                `/api/tasks/${id}/execute`
-              );
+            axios
+              .post(`/api/tasks/${id}/execute`, null, {
+                timeout: 1800000, // 30分钟超时
+              })
+              .then((response) => {
+                console.log("任务执行响应:", response.data);
 
-              console.log("任务执行响应:", response.data);
-
-              if (response.data.success || response.data.message) {
-                const report = response.data.report;
-                if (report && report.pass_rate !== undefined) {
-                  message.success(
-                    `任务执行完成！共执行 ${
-                      response.data.caseCount || task.selectedCases.length
-                    } 个用例，通过率: ${report.pass_rate}%`
-                  );
+                if (response.data.success || response.data.message) {
+                  const report = response.data.report;
+                  if (report && report.pass_rate !== undefined) {
+                    message.success(
+                      `任务执行完成！共执行 ${
+                        response.data.caseCount || task.selectedCases.length
+                      } 个用例，通过率: ${report.pass_rate}%`
+                    );
+                  } else {
+                    message.success("任务执行成功");
+                  }
                 } else {
-                  message.success("任务执行成功");
+                  message.error(response.data.error || "任务执行失败");
                 }
-              } else {
-                message.error(response.data.error || "任务执行失败");
-              }
-            } catch (error) {
-              console.error("执行任务失败:", error);
-              message.error("执行任务失败，请检查网络连接和后端服务");
-            } finally {
-              loadingMessage.destroy();
-            }
+              })
+              .catch((error) => {
+                console.error("执行任务失败:", error);
+                message.error("执行任务失败，请检查网络连接和后端服务");
+              });
           },
         });
       }
@@ -1197,11 +1165,10 @@ export default defineComponent({
       projectOptions,
       executionTypeOptions,
       typeOptions,
-      environmentOptions,
       handleExecute,
       handleDelete,
 
-      // 设置相关 - 使用共享设置
+      // 任务设置相关
       handleSettings,
     };
   },

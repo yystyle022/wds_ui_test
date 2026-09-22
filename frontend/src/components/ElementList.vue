@@ -647,7 +647,9 @@ export default defineComponent({
             }
           } catch (error) {
             console.error("删除失败:", error);
-            message.error("删除失败");
+            // 显示后端返回的具体错误信息
+            const errorMsg = error.response?.data?.error || "删除失败";
+            message.error(errorMsg);
           }
         },
       });
@@ -678,7 +680,9 @@ export default defineComponent({
             }
           } catch (error) {
             console.error("批量删除失败:", error);
-            message.error("批量删除失败");
+            // 显示后端返回的具体错误信息
+            const errorMsg = error.response?.data?.error || "批量删除失败";
+            message.error(errorMsg);
           }
         },
       });

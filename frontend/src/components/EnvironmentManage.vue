@@ -128,6 +128,14 @@
           />
         </n-form-item>
 
+        <n-form-item label="所属环境" path="environment">
+          <n-select
+            v-model:value="varFormData.environment"
+            :options="environmentOptions"
+            placeholder="请选择所属环境"
+          />
+        </n-form-item>
+
         <n-form-item label="变量类型" path="type">
           <n-radio-group v-model:value="varFormData.type">
             <n-space>
@@ -135,6 +143,8 @@
               <n-radio value="random">随机数</n-radio>
               <n-radio value="database">数据库查询</n-radio>
               <n-radio value="auth">Authorization</n-radio>
+              <n-radio value="cookie">Cookie</n-radio>
+              <n-radio value="extracted">提取变量</n-radio>
             </n-space>
           </n-radio-group>
         </n-form-item>
@@ -184,11 +194,13 @@
           </n-form-item>
         </template>
 
-        <template v-if="varFormData.type === 'auth'">
-          <n-form-item label="Token值" path="value">
+        <template v-if="varFormData.type === 'auth' || varFormData.type === 'cookie'">
+          <n-form-item :label="varFormData.type === 'cookie' ? 'Cookie值' : 'Token值'" path="value">
             <n-input
               v-model:value="varFormData.value"
-              placeholder="请输入 Authorization Token"
+              :type="varFormData.type === 'cookie' ? 'textarea' : 'text'"
+              :rows="varFormData.type === 'cookie' ? 4 : undefined"
+              :placeholder="varFormData.type === 'cookie' ? '请粘贴Cookie内容（JSON格式的数组）' : '请输入 Authorization Token'"
             />
           </n-form-item>
 
@@ -260,7 +272,7 @@ import axios from "axios";
 
 interface Variable {
   name: string;
-  type: "fixed" | "random" | "database" | "auth";
+  type: "fixed" | "random" | "database" | "auth" | "cookie" | "extracted";
   value?: string;
   minValue?: number;
   maxValue?: number;
@@ -481,6 +493,13 @@ const selectedEnvVariables = computed(() =>
   allVariables.value.filter((v) => v.environment === selectedEnv.value?.name)
 );
 
+const environmentOptions = computed(() => {
+  return environmentList.value.map((env) => ({
+    label: env.name,
+    value: env.name,
+  }));
+});
+
 const availableEnvs = computed(() => {
   // 获取当前项目的所有环境（如果有选择项目）
   if (varFormData.value.project) {
@@ -547,8 +566,10 @@ const getVariableCurrentValue = (variable: Variable): string => {
     return variable.value || "";
   } else if (variable.type === "database") {
     return "执行用例时查询";
-  } else if (variable.type === "auth") {
+  } else if (variable.type === "auth" || variable.type === "cookie") {
     return variable.value ? variable.value.slice(0, 6) + "******" : "";
+  } else if (variable.type === "extracted") {
+    return variable.value || "用例执行后写入";
   } else {
     return generateRandomValue(variable.minValue || 0, variable.maxValue || 100);
   }
@@ -566,6 +587,7 @@ const varFormData = ref<Variable>({
   database: "",
   query: "",
   description: "",
+  environment: "",
   project: "",
   matchDomains: [],
 });
@@ -583,12 +605,18 @@ const varRules: FormRules = {
     {
       validator: (rule, value) => {
         if (
-          (varFormData.value.type === "fixed" || varFormData.value.type === "auth") &&
+          (varFormData.value.type === "fixed" ||
+           varFormData.value.type === "auth" ||
+           varFormData.value.type === "cookie") &&
           !value
         ) {
-          return new Error(
-            varFormData.value.type === "auth" ? "请输入Token值" : "请输入变量值"
-          );
+          if (varFormData.value.type === "auth") {
+            return new Error("请输入Token值");
+          } else if (varFormData.value.type === "cookie") {
+            return new Error("请输入Cookie值");
+          } else {
+            return new Error("请输入变量值");
+          }
         }
         return true;
       },
@@ -598,7 +626,8 @@ const varRules: FormRules = {
   matchDomains: [
     {
       validator: (rule, value) => {
-        if (varFormData.value.type === "auth" && (!value || value.length === 0)) {
+        if ((varFormData.value.type === "auth" || varFormData.value.type === "cookie") &&
+            (!value || value.length === 0)) {
           return new Error("请至少填写一个匹配域名");
         }
         return true;
@@ -656,6 +685,7 @@ const openAddVarModal = () => {
     database: "",
     query: "",
     description: "",
+    environment: selectedEnv.value?.name || "",
     project: "",
     matchDomains: [],
   };
@@ -669,6 +699,7 @@ const handleEditVar = (variable: Variable) => {
     ...variable,
     description: variable.description || "",
     project: variable.project || "",
+    environment: variable.environment || "",
     matchDomains: variable.matchDomains || [],
   };
   showVarModal.value = true;
@@ -683,7 +714,7 @@ const handleSaveVar = async () => {
       name: varFormData.value.name,
       type: varFormData.value.type,
       description: varFormData.value.description,
-      environment: selectedEnv.value.name, // 只保存到当前环境
+      environment: varFormData.value.environment, // 使用表单选择的环境
       project: varFormData.value.project || "",
     };
 
@@ -692,9 +723,11 @@ const handleSaveVar = async () => {
     } else if (varFormData.value.type === "database") {
       payload.database = varFormData.value.database;
       payload.query = varFormData.value.query;
-    } else if (varFormData.value.type === "auth") {
+    } else if (varFormData.value.type === "auth" || varFormData.value.type === "cookie") {
       payload.value = varFormData.value.value;
       payload.matchDomains = varFormData.value.matchDomains || [];
+    } else if (varFormData.value.type === "extracted") {
+      payload.value = "";
     } else {
       payload.minValue = varFormData.value.minValue;
       payload.maxValue = varFormData.value.maxValue;
@@ -755,6 +788,8 @@ const varColumns: DataTableColumns<Variable> = [
         random: { label: "随机数", tagType: "info" },
         database: { label: "数据库查询", tagType: "warning" },
         auth: { label: "Authorization", tagType: "error" },
+        cookie: { label: "Cookie", tagType: "error" },
+        extracted: { label: "提取变量", tagType: "info" },
       };
       const cfg = typeMap[row.type] || typeMap.fixed;
       return h(NTag, { type: cfg.tagType }, { default: () => cfg.label });
@@ -780,12 +815,15 @@ const varColumns: DataTableColumns<Variable> = [
         return h("span", `固定值: ${row.value}`);
       } else if (row.type === "database") {
         return h("span", `数据库: ${row.database} | 查询: ${row.query}`);
-      } else if (row.type === "auth") {
-        const maskedToken = row.value ? row.value.slice(0, 6) + "******" : "";
+      } else if (row.type === "auth" || row.type === "cookie") {
+        const maskedValue = row.value ? row.value.slice(0, 6) + "******" : "";
+        const label = row.type === "cookie" ? "Cookie" : "Token";
         return h(
           "span",
-          `域名: ${(row.matchDomains || []).join(", ")} | Token: ${maskedToken}`
+          `域名: ${(row.matchDomains || []).join(", ")} | ${label}: ${maskedValue}`
         );
+      } else if (row.type === "extracted") {
+        return h("span", row.value || "用例执行后写入");
       } else {
         return h("span", `范围: ${row.minValue} ~ ${row.maxValue}`);
       }

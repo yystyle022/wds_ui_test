@@ -1,5 +1,6 @@
 {
-  "wds_client_host": "https://test-esp.wdsheng.com",
-  "wds_client_login_username": "15100001018",
-  "wds_client_login_password": "111111"
+  "wds_client_host": "https://uat-esp.wdsheng.com",
+  "wds_client_login_username": "15122356779",
+  "wds_management_host": "https://uat-esp-console.wdsheng.com",
+  "wds_client_login_password": "123456"
 }

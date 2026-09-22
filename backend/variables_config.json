@@ -38,7 +38,7 @@
   {
     "name": "wds_client_login_username",
     "type": "fixed",
-    "description": "uat环境登录账号",
+    "description": "uat环境企服平台登录账号",
     "environment": "uat环境",
     "project": "万大圣",
     "value": "15122356779"
@@ -58,5 +58,29 @@
     "environment": "test环境",
     "project": "万大圣",
     "value": "https://test-esp-console.wdsheng.com"
+  },
+  {
+    "name": "wds_client_host",
+    "type": "fixed",
+    "description": "万大圣企服平台域名",
+    "environment": "uat环境",
+    "project": "万大圣",
+    "value": "https://uat-esp.wdsheng.com"
+  },
+  {
+    "name": "wds_management_host",
+    "type": "fixed",
+    "description": "uat环境运管平台地址",
+    "environment": "uat环境",
+    "project": "万大圣",
+    "value": "https://uat-esp-console.wdsheng.com"
+  },
+  {
+    "name": "wds_client_login_password",
+    "type": "fixed",
+    "description": "uat环境企服平台登录密码",
+    "environment": "uat环境",
+    "project": "万大圣",
+    "value": "123456"
   }
 ]

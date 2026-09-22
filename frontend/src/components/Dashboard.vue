@@ -94,6 +94,7 @@ import {
   TimeOutline,
   CheckmarkCircleOutline,
   CloseCircleOutline,
+  AlertCircleOutline,
   ChevronForwardOutline,
 } from "@vicons/ionicons5";
 import * as echarts from "echarts";
@@ -108,7 +109,7 @@ interface ReportRecord {
   id: number;
   name: string;
   time: string;
-  status: "success" | "fail";
+  status: string;
   pass_rate: number;
   duration: string;
 }
@@ -461,25 +462,38 @@ export default defineComponent({
         key: "status",
         width: 100,
         render(row: ReportRecord) {
+          const statusMap: {
+            [key: string]: { text: string; type: "success" | "warning" | "error" | "info"; icon: any };
+          } = {
+            success: { text: "通过", type: "success", icon: CheckmarkCircleOutline },
+            partial: { text: "部分成功", type: "warning", icon: AlertCircleOutline },
+            executing: { text: "执行中...", type: "info", icon: TimeOutline },
+            running: { text: "运行中", type: "info", icon: TimeOutline },
+            failed: { text: "失败", type: "error", icon: CloseCircleOutline },
+            fail: { text: "失败", type: "error", icon: CloseCircleOutline },
+            error: { text: "失败", type: "error", icon: CloseCircleOutline },
+          };
+
+          const status = statusMap[row.status] || {
+            text: row.status,
+            type: "error" as const,
+            icon: CloseCircleOutline,
+          };
+
           return h(
             NTag,
             {
-              type: row.status === "success" ? "success" : "error",
+              type: status.type,
               size: "small",
             },
             {
-              default: () => (row.status === "success" ? "通过" : "失败"),
+              default: () => status.text,
               icon: () =>
                 h(
                   NIcon,
                   { size: 14 },
                   {
-                    default: () =>
-                      h(
-                        row.status === "success"
-                          ? CheckmarkCircleOutline
-                          : CloseCircleOutline
-                      ),
+                    default: () => h(status.icon),
                   }
                 ),
             }

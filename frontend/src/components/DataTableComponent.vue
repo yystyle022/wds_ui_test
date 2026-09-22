@@ -80,146 +80,8 @@
       </div>
     </div>
 
-    <!-- 设置弹窗 -->
-    <n-modal
-      v-model:show="showSettingsModal"
-      preset="dialog"
-      title="测试执行设置"
-      style="width: 750px"
-    >
-      <n-form
-        ref="settingsFormRef"
-        :model="settingsForm"
-        label-placement="left"
-        label-width="120"
-        class="settings-form"
-      >
-        <n-form-item label="默认浏览器">
-          <n-select
-            v-model:value="settingsForm.defaultBrowser"
-            :options="browserOptions"
-            placeholder="请选择默认浏览器"
-          />
-        </n-form-item>
-
-        <n-form-item label="默认无头模式">
-          <n-select
-            v-model:value="settingsForm.defaultHeadless"
-            :options="headlessOptions"
-            placeholder="请选择默认运行模式"
-          />
-        </n-form-item>
-
-        <n-form-item label="保存步骤截图">
-          <n-select
-            v-model:value="settingsForm.saveScreenshots"
-            :options="screenshotOptions"
-            placeholder="请选择是否保存截图"
-          />
-        </n-form-item>
-
-        <!-- 新增多线程执行设置 -->
-        <n-form-item label="批量执行模式">
-          <n-select
-            v-model:value="settingsForm.enableMultiThread"
-            :options="multiThreadOptions"
-            placeholder="请选择批量执行模式"
-          />
-        </n-form-item>
-
-        <!-- 环境选择 -->
-        <n-form-item label="默认环境">
-          <n-select
-            v-model:value="settingsForm.defaultEnvironment"
-            :options="environmentOptions"
-            placeholder="请选择默认环境"
-          />
-        </n-form-item>
-
-        <!-- 是否使用Authorization -->
-        <n-form-item label="使用Authorization">
-          <n-select
-            v-model:value="settingsForm.useAuthorization"
-            :options="useAuthorizationOptions"
-            placeholder="请选择是否使用Authorization"
-          />
-        </n-form-item>
-
-        <!-- 是否使用登录态 -->
-        <n-form-item label="使用登录态">
-          <n-select
-            v-model:value="settingsForm.useLoginState"
-            :options="useLoginStateOptions"
-            placeholder="请选择是否使用登录态"
-          />
-        </n-form-item>
-
-        <!-- 设置预览 -->
-        <n-divider style="margin: 16px 0" />
-        <div class="settings-preview">
-          <n-text depth="3" style="font-size: 12px">
-            <div>
-              默认浏览器:
-              <n-text strong>{{
-                getBrowserLabel(settingsForm.defaultBrowser)
-              }}</n-text>
-            </div>
-            <div>
-              运行模式:
-              <n-text strong>{{
-                getHeadlessDisplayText(settingsForm.defaultHeadless)
-              }}</n-text>
-            </div>
-            <div>
-              步骤截图:
-              <n-text strong>{{
-                getScreenshotDisplayText(settingsForm.saveScreenshots)
-              }}</n-text>
-            </div>
-            <!-- 新增多线程显示 -->
-            <div>
-              批量执行:
-              <n-text strong>{{
-                getMultiThreadDisplayText(settingsForm.enableMultiThread)
-              }}</n-text>
-            </div>
-            <!-- 环境显示 -->
-            <div>
-              默认环境:
-              <n-text strong>{{
-                getEnvironmentDisplayText(settingsForm.defaultEnvironment)
-              }}</n-text>
-            </div>
-            <!-- Authorization显示 -->
-            <div>
-              使用Authorization:
-              <n-text strong>{{
-                getUseAuthorizationDisplayText(settingsForm.useAuthorization)
-              }}</n-text>
-            </div>
-            <!-- 登录态显示 -->
-            <div>
-              使用登录态:
-              <n-text strong>{{
-                getUseLoginStateDisplayText(settingsForm.useLoginState)
-              }}</n-text>
-            </div>
-          </n-text>
-        </div>
-      </n-form>
-
-      <p class="settings-hint">
-        使用Authorization：开启后，执行用例时会按用例所属项目+环境自动匹配变量管理中配置的Authorization变量，在请求对应域名时携带Token；关闭则不携带任何Authorization。<br />
-        使用登录态：开启后，执行用例时会按用例所属项目+环境自动匹配变量管理中配置的Cookie变量，在浏览器打开时预先注入登录后的Cookie；关闭则以未登录状态开始执行。
-      </p>
-
-      <template #action>
-        <n-space>
-          <n-button @click="closeSettingsModal">取消</n-button>
-          <n-button type="primary" @click="saveSettings">保存设置</n-button>
-        </n-space>
-      </template>
-    </n-modal>
+    <!-- 设置弹窗：复用共享的设置弹窗组件（scope="case" 对应 /api/settings） -->
+    <SettingsModal scope="case" />
 
     <!-- 变量管理弹窗 -->
     <n-modal
@@ -438,6 +300,7 @@ import type { DataTableColumns, DataTableRowKey } from "naive-ui";
 import { defineComponent, ref, onMounted, h, Fragment, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
+import { useSettings } from "../composables/useSettings";
 import {
   NButton,
   NP,
@@ -449,7 +312,6 @@ import {
   NModal,
   NSpace,
   NSelect,
-  FormInst,
   NDescriptions,
   NDescriptionsItem,
   NDivider,
@@ -503,16 +365,6 @@ interface ReportNameForm {
   description: string;
 }
 
-interface SettingsForm {
-  defaultBrowser: string;
-  defaultHeadless: string;
-  saveScreenshots: string;
-  enableMultiThread: string;
-  defaultEnvironment: string;
-  useAuthorization: string;
-  useLoginState: string;
-}
-
 export default defineComponent({
   components: {
     NButton,
@@ -531,6 +383,7 @@ export default defineComponent({
     NTable,
     NTooltip,
     VariableHighlightInput: () => import("./VariableHighlightInput.vue"),
+    SettingsModal: () => import("./SettingsModal.vue"),
   },
 
   setup() {
@@ -759,111 +612,12 @@ export default defineComponent({
       currentExecuteData.value = null;
     };
 
-    // 设置相关的响应式数据
-    const showSettingsModal = ref(false);
-    const settingsFormRef = ref<FormInst | null>(null);
-    const settingsForm = ref<SettingsForm>({
-      defaultBrowser: "chrome",
-      defaultHeadless: "false", // 使用字符串
-      saveScreenshots: "false", // 使用字符串
-      enableMultiThread: "false",
-      defaultEnvironment: "生产环境",
-      useAuthorization: "true",
-      useLoginState: "true",
-    });
-
-    // 多线程选项 - 使用字符串值
-    const multiThreadOptions = [
-      { label: "否（顺序执行）", value: "false" },
-      { label: "是（并行执行）", value: "true" },
-    ];
-
-    // 是否使用Authorization选项 - 使用字符串值
-    const useAuthorizationOptions = [
-      { label: "否（不携带Authorization）", value: "false" },
-      { label: "是（自动匹配并携带Token）", value: "true" },
-    ];
-
-    // 是否使用登录态选项 - 使用字符串值
-    const useLoginStateOptions = [
-      { label: "否（未登录状态执行）", value: "false" },
-      { label: "是（自动注入登录后的Cookie）", value: "true" },
-    ];
-
-    // 环境选项 - 从环境列表动态获取
-    const environmentOptions = ref<{ label: string; value: string }[]>([]);
-
-    // 获取环境列表
-    const fetchEnvironments = async () => {
-      try {
-        const response = await axios.get("/api/environments");
-        if (response.data.success) {
-          const environments = response.data.environments || [];
-          environmentOptions.value = environments.map((env: any) => ({
-            label: env.name,
-            value: env.name,
-          }));
-        }
-      } catch (error) {
-        console.error("加载环境列表失败:", error);
-      }
-    };
+    // 设置弹窗逻辑（复用共享composable，scope="case" 对应 /api/settings）
+    const { handleSettings } = useSettings("case", message);
 
     // 变量查看相关的响应式数据
     const showVariablesModal = ref(false);
     const variables = ref<Record<string, string>>({});
-    // 获取多线程显示文本
-    const getMultiThreadDisplayText = (value: string): string => {
-      return value === "true" ? "并行执行" : "顺序执行";
-    };
-
-    const getEnvironmentDisplayText = (value: string): string => {
-      return value || "生产环境";
-    };
-
-    const getUseAuthorizationDisplayText = (value: string): string => {
-      return value === "false" ? "不使用" : "使用";
-    };
-
-    const getUseLoginStateDisplayText = (value: string): string => {
-      return value === "false" ? "不使用" : "使用";
-    };
-
-    // 浏览器选项
-    const browserOptions = [
-      { label: "Chrome", value: "chrome" },
-      { label: "Firefox", value: "firefox" },
-      { label: "Chromium", value: "chromium" },
-      { label: "Edge", value: "msedge" },
-    ];
-
-    // 无头模式选项 - 使用字符串值
-    const headlessOptions = [
-      { label: "否（显示浏览器界面）", value: "false" },
-      { label: "是（无头模式运行）", value: "true" },
-    ];
-
-    // 截图选项 - 使用字符串值
-    const screenshotOptions = [
-      { label: "否（不保存截图）", value: "false" },
-      { label: "是（保存步骤截图）", value: "true" },
-    ];
-
-    // 获取浏览器标签
-    const getBrowserLabel = (browserValue: string): string => {
-      const option = browserOptions.find((opt) => opt.value === browserValue);
-      return option ? option.label : browserValue;
-    };
-
-    // 获取无头模式显示文本
-    const getHeadlessDisplayText = (value: string): string => {
-      return value === "true" ? "无头模式" : "显示界面";
-    };
-
-    // 获取截图选项显示文本
-    const getScreenshotDisplayText = (value: string): string => {
-      return value === "true" ? "启用" : "禁用";
-    };
 
     // ==================== 元素管理相关 ====================
     // 元素列表数据
@@ -977,75 +731,6 @@ export default defineComponent({
       }
 
       return config;
-    };
-
-    // 打开设置弹窗
-    const handleSettings = async () => {
-      try {
-        // 先获取环境列表
-        await fetchEnvironments();
-
-        const response = await axios.get("/api/settings");
-        if (response.data) {
-          settingsForm.value = {
-            defaultBrowser: response.data.defaultBrowser || "chrome",
-            defaultHeadless: response.data.defaultHeadless ? "true" : "false",
-            saveScreenshots: response.data.saveScreenshots ? "true" : "false",
-            enableMultiThread: response.data.enableMultiThread
-              ? "true"
-              : "false",
-            defaultEnvironment: response.data.defaultEnvironment || "生产环境",
-            useAuthorization:
-              response.data.useAuthorization === false ? "false" : "true",
-            useLoginState:
-              response.data.useLoginState === false ? "false" : "true",
-          };
-        }
-      } catch (error) {
-        console.log("获取设置失败，使用默认设置:", error);
-        settingsForm.value = {
-          defaultBrowser: "chrome",
-          defaultHeadless: "false",
-          saveScreenshots: "false",
-          enableMultiThread: "false",
-          defaultEnvironment: "生产环境",
-          useAuthorization: "true",
-          useLoginState: "true",
-        };
-      }
-      showSettingsModal.value = true;
-    };
-
-    // 关闭设置弹窗
-    const closeSettingsModal = () => {
-      showSettingsModal.value = false;
-    };
-
-    // 保存设置
-    const saveSettings = async () => {
-      try {
-        // 发送到后端时将字符串转换为布尔值
-        const settingsData = {
-          defaultBrowser: settingsForm.value.defaultBrowser,
-          defaultHeadless: settingsForm.value.defaultHeadless === "true",
-          saveScreenshots: settingsForm.value.saveScreenshots === "true",
-          enableMultiThread: settingsForm.value.enableMultiThread === "true",
-          defaultEnvironment: settingsForm.value.defaultEnvironment,
-          useAuthorization: settingsForm.value.useAuthorization === "true",
-          useLoginState: settingsForm.value.useLoginState === "true",
-        };
-
-        const response = await axios.post("/api/settings", settingsData);
-        if (response.data.message) {
-          message.success("设置保存成功");
-          closeSettingsModal();
-        } else {
-          message.error(response.data.error || "保存设置失败");
-        }
-      } catch (error) {
-        console.error("保存设置失败:", error);
-        message.error("保存设置失败，请检查网络连接");
-      }
     };
 
     // 变量查看相关方法
@@ -1582,28 +1267,8 @@ export default defineComponent({
       dialog,
       handleEdit,
       // 设置相关
-      showSettingsModal,
-      settingsFormRef,
-      settingsForm,
-      browserOptions,
-      headlessOptions,
-      screenshotOptions,
       handleSettings,
-      closeSettingsModal,
-      saveSettings,
-      getBrowserLabel,
-      getHeadlessDisplayText,
-      getScreenshotDisplayText,
       getExecuteConfig,
-      multiThreadOptions,
-      getMultiThreadDisplayText,
-      environmentOptions,
-      getEnvironmentDisplayText,
-      fetchEnvironments,
-      useAuthorizationOptions,
-      useLoginStateOptions,
-      getUseAuthorizationDisplayText,
-      getUseLoginStateDisplayText,
       // 变量查看相关
       showVariablesModal,
       variables,

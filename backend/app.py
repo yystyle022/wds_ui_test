@@ -36,12 +36,24 @@ if not os.path.exists(SCREENSHOTS_DIR):
 
 # 设置文件路径
 SETTINGS_FILE = "settings.json"
+TASK_SETTINGS_FILE = "task_settings.json"  # 任务设置文件（独立于用例设置）
 
 app = Flask(__name__, static_folder="../frontend/dist", static_url_path="")
 CORS(app)  # 启用 CORS
 
-# 默认设置
+# 默认设置（用例设置）
 DEFAULT_SETTINGS = {
+    "defaultBrowser": "chrome",
+    "defaultHeadless": False,
+    "saveScreenshots": False,
+    "enableMultiThread": False,
+    "defaultEnvironment": "生产环境",
+    "useAuthorization": True,
+    "useLoginState": True,
+}
+
+# 默认任务设置（独立于用例设置，但字段结构与用例设置保持一致）
+DEFAULT_TASK_SETTINGS = {
     "defaultBrowser": "chrome",
     "defaultHeadless": False,
     "saveScreenshots": False,
@@ -77,6 +89,34 @@ def save_settings(settings):
         return True
     except Exception as e:
         logger.error(f"保存设置失败: {str(e)}")
+        return False
+
+
+def load_task_settings():
+    """加载任务设置配置"""
+    try:
+        if os.path.exists(TASK_SETTINGS_FILE):
+            with open(TASK_SETTINGS_FILE, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+                logger.info(f"加载任务设置成功: {settings}")
+                return settings
+        else:
+            logger.info("任务设置文件不存在，使用默认设置")
+            return DEFAULT_TASK_SETTINGS.copy()
+    except Exception as e:
+        logger.error(f"加载任务设置失败: {str(e)}")
+        return DEFAULT_TASK_SETTINGS.copy()
+
+
+def save_task_settings(settings):
+    """保存任务设置配置"""
+    try:
+        with open(TASK_SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+        logger.info(f"保存任务设置成功: {settings}")
+        return True
+    except Exception as e:
+        logger.error(f"保存任务设置失败: {str(e)}")
         return False
 
 
@@ -229,13 +269,21 @@ def auto_create_missing_elements(testcase_steps, project, module, page):
                 # 优先使用步骤中输入的元素名称，其次使用描述，最后使用默认名称
                 input_element_name = step.get("element_name", "").strip()
                 describe = step.get("describe", "")
-                element_name = (
-                    input_element_name
-                    if input_element_name
-                    else (describe if describe else f"元素_{max_id}")
-                )
 
-                # 创建新元素
+                # 如果没有明确输入元素名称，从描述中提取
+                if not input_element_name and describe:
+                    # 如果描述中有"-"，取"-"前面的内容作为元素名称
+                    if "-" in describe:
+                        element_name = describe.split("-")[0].strip()
+                    else:
+                        # 没有"-"就用整个描述
+                        element_name = describe.strip()
+                else:
+                    element_name = (
+                        input_element_name if input_element_name else f"元素_{max_id}"
+                    )
+
+                # 创建新元素，描述格式为：模块-页面-名称
                 new_element = {
                     "id": max_id,
                     "project": project,
@@ -244,7 +292,7 @@ def auto_create_missing_elements(testcase_steps, project, module, page):
                     "elementName": element_name,
                     "xpath": xpath,
                     "locate_type": locate_type,
-                    "description": f"{module} - {page} - {element_name}",
+                    "description": f"{module}-{page}-{element_name}",
                 }
 
                 elements.append(new_element)
@@ -417,6 +465,88 @@ def update_settings():
 
     except Exception as e:
         logger.error(f"更新设置失败: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/task-settings", methods=["GET"])
+def get_task_settings():
+    """获取任务设置"""
+    try:
+        settings = load_task_settings()
+        logger.info(f"获取任务设置成功: {settings}")
+        return jsonify(settings)
+    except Exception as e:
+        logger.error(f"获取任务设置失败: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/task-settings", methods=["POST"])
+def update_task_settings():
+    """更新任务设置"""
+    try:
+        new_settings = request.get_json()
+        logger.info(f"收到任务设置更新请求: {new_settings}")
+
+        # 验证设置格式
+        if not isinstance(new_settings, dict):
+            return jsonify({"error": "设置格式不正确"}), 400
+
+        # 验证必要字段
+        required_fields = [
+            "defaultBrowser",
+            "defaultHeadless",
+            "saveScreenshots",
+            "enableMultiThread",
+        ]
+        for field in required_fields:
+            if field not in new_settings:
+                return jsonify({"error": f"缺少必要字段: {field}"}), 400
+
+        # 验证字段类型
+        if not isinstance(new_settings["defaultBrowser"], str):
+            return jsonify({"error": "defaultBrowser 必须是字符串"}), 400
+        if not isinstance(new_settings["defaultHeadless"], bool):
+            return jsonify({"error": "defaultHeadless 必须是布尔值"}), 400
+        if not isinstance(new_settings["saveScreenshots"], bool):
+            return jsonify({"error": "saveScreenshots 必须是布尔值"}), 400
+        if not isinstance(new_settings["enableMultiThread"], bool):
+            return jsonify({"error": "enableMultiThread 必须是布尔值"}), 400
+
+        # 验证可选的环境字段
+        if "defaultEnvironment" in new_settings and not isinstance(
+            new_settings["defaultEnvironment"], str
+        ):
+            return jsonify({"error": "defaultEnvironment 必须是字符串"}), 400
+
+        # 验证可选的Authorization/登录态开关字段
+        if "useAuthorization" in new_settings and not isinstance(
+            new_settings["useAuthorization"], bool
+        ):
+            return jsonify({"error": "useAuthorization 必须是布尔值"}), 400
+        if "useLoginState" in new_settings and not isinstance(
+            new_settings["useLoginState"], bool
+        ):
+            return jsonify({"error": "useLoginState 必须是布尔值"}), 400
+
+        # 验证浏览器类型
+        valid_browsers = ["chrome", "firefox", "chromium", "msedge"]
+        if new_settings["defaultBrowser"] not in valid_browsers:
+            return (
+                jsonify(
+                    {"error": f"不支持的浏览器类型: {new_settings['defaultBrowser']}"}
+                ),
+                400,
+            )
+
+        # 保存任务设置
+        if save_task_settings(new_settings):
+            logger.info(f"任务设置更新成功: {new_settings}")
+            return jsonify({"message": "任务设置保存成功"})
+        else:
+            return jsonify({"error": "保存任务设置失败"}), 500
+
+    except Exception as e:
+        logger.error(f"更新任务设置失败: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1755,12 +1885,25 @@ def delete_element(element_id):
         with open(elements_file, "r", encoding="utf-8") as file:
             elements = json.load(file)
 
-        # 查找并删除元素
-        original_length = len(elements)
-        elements = [e for e in elements if e["id"] != element_id]
-
-        if len(elements) == original_length:
+        # 检查元素是否存在
+        element_exists = any(e["id"] == element_id for e in elements)
+        if not element_exists:
             return jsonify({"error": "元素不存在"}), 404
+
+        # 检查元素是否在用例中被引用
+        data_file = "data.json"
+        if os.path.exists(data_file):
+            with open(data_file, "r", encoding="utf-8") as file:
+                testcases = json.load(file)
+
+            # 遍历所有用例的步骤，检查是否引用了该元素
+            for testcase in testcases:
+                for step in testcase.get("testcase_step", []):
+                    if step.get("element_id") == element_id:
+                        return jsonify({"error": "该元素已在用例中引用，需解除引用后才能删除"}), 400
+
+        # 删除元素
+        elements = [e for e in elements if e["id"] != element_id]
 
         # 保存更新后的数据
         with open(elements_file, "w", encoding="utf-8") as file:
@@ -1791,6 +1934,29 @@ def batch_delete_elements():
 
         with open(elements_file, "r", encoding="utf-8") as file:
             elements = json.load(file)
+
+        # 检查要删除的元素是否在用例中被引用
+        data_file = "data.json"
+        if os.path.exists(data_file):
+            with open(data_file, "r", encoding="utf-8") as file:
+                testcases = json.load(file)
+
+            # 收集被引用的元素ID
+            referenced_element_ids = []
+            for testcase in testcases:
+                for step in testcase.get("testcase_step", []):
+                    step_element_id = step.get("element_id")
+                    if step_element_id in element_ids:
+                        referenced_element_ids.append(step_element_id)
+
+            # 如果有元素被引用，返回错误
+            if referenced_element_ids:
+                # 去重
+                referenced_element_ids = list(set(referenced_element_ids))
+                return jsonify({
+                    "error": f"该元素已在用例中引用，需解除引用后才能删除",
+                    "referenced_ids": referenced_element_ids
+                }), 400
 
         # 删除指定ID的元素
         original_length = len(elements)
@@ -2065,13 +2231,14 @@ def execute_task(task_id):
             f"开始执行任务 '{task['name']}' 中的 {len(case_ids)} 个用例: {case_ids}"
         )
 
-        # 获取设置配置
-        settings = load_settings()
+        # 获取任务设置配置（独立于用例设置，但字段结构与用例设置保持一致）
+        settings = load_task_settings()
         config = {
             "browser": settings.get("defaultBrowser", "chrome"),
             "headless": settings.get("defaultHeadless", False),
             "saveScreenshots": settings.get("saveScreenshots", False),
             "enableMultiThread": settings.get("enableMultiThread", False),
+            "executeEnvironment": settings.get("defaultEnvironment", ""),
             "reportName": f"任务执行报告-{task['name']}",
             "description": f"任务: {task['name']} - 自动执行 {len(case_ids)} 个用例",
         }
@@ -2091,6 +2258,68 @@ def execute_task(task_id):
             if not testcases:
                 return jsonify({"error": "任务中的用例均未找到"}), 404
 
+            # 按每个用例所属的项目+环境，各自组装按域名区分的Authorization配置和登录态Cookie
+            # 分别受任务设置中"是否使用Authorization"/"是否使用登录态"开关控制，默认均为使用
+            use_authorization = settings.get("useAuthorization", True)
+            use_login_state = settings.get("useLoginState", True)
+            for case in testcases:
+                case_environment = config.get("executeEnvironment") or case.get(
+                    "environment", ""
+                )
+                case["_authProfiles"] = (
+                    get_auth_profiles_for_execution(case.get("project", ""), case_environment)
+                    if use_authorization
+                    else []
+                )
+                case["_loginStateCookies"] = (
+                    get_login_state_cookies_for_execution(case.get("project", ""), case_environment)
+                    if use_login_state
+                    else []
+                )
+
+            # 检查所有用例是否包含登录按钮XPath或login_website操作（需要禁用认证信息）
+            has_login = False
+            for case in testcases:
+                for step in case.get("testcase_step", []):
+                    step_xpath = step.get("xpath", "")
+                    step_operate = step.get("operate", "")
+                    if step_xpath == '//span[text()="登 录"]' or step_operate == "login_website":
+                        has_login = True
+                        break
+                if has_login:
+                    break
+
+            if has_login:
+                logger.info("检测到任务中的用例包含登录相关操作，禁用认证信息配置")
+                for case in testcases:
+                    case["_authProfiles"] = []
+                    case["_loginStateCookies"] = []
+
+            # 创建一个"执行中"状态的临时报告，让前端可以立即关闭确认弹窗并轮询该报告
+            from datetime import datetime
+
+            temp_report_id = int(time.time())
+            executed_case_info = [
+                {"id": case["id"], "name": case.get("name", "未命名测试")}
+                for case in testcases
+            ]
+            executing_report = {
+                "id": temp_report_id,
+                "name": config["reportName"],
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "status": "executing",
+                "pass_rate": 0,
+                "duration": "00:00",
+                "config": config,
+                "steps": [],
+                "executed_cases": executed_case_info,
+                "description": config.get("description", ""),
+            }
+
+            # 立即保存"执行中"状态的报告
+            save_report(executing_report)
+            logger.info(f"已创建任务执行中的临时报告，ID: {temp_report_id}")
+
             # 执行测试用例
             import asyncio
             from test_executor import (
@@ -2098,30 +2327,52 @@ def execute_task(task_id):
                 execute_batch_test_cases_parallel,
             )
 
-            if config.get("enableMultiThread", False):
-                logger.info(f"任务 '{task['name']}' 使用多线程并行执行模式")
-                batch_report = asyncio.run(
-                    execute_batch_test_cases_parallel(testcases, config)
+            try:
+                if config.get("enableMultiThread", False):
+                    logger.info(f"任务 '{task['name']}' 使用多线程并行执行模式")
+                    batch_report = asyncio.run(
+                        execute_batch_test_cases_parallel(testcases, config)
+                    )
+                else:
+                    logger.info(f"任务 '{task['name']}' 使用顺序执行模式")
+                    batch_report = asyncio.run(execute_batch_test_cases(testcases, config))
+
+                # 使用相同的报告ID，覆盖之前的"执行中"报告
+                batch_report["id"] = temp_report_id
+
+                # 保存报告
+                save_report(batch_report)
+
+                logger.info(
+                    f"任务 '{task['name']}' 执行完成，通过率: {batch_report.get('pass_rate', 0)}%"
                 )
-            else:
-                logger.info(f"任务 '{task['name']}' 使用顺序执行模式")
-                batch_report = asyncio.run(execute_batch_test_cases(testcases, config))
-
-            # 保存报告
-            save_report(batch_report)
-
-            logger.info(
-                f"任务 '{task['name']}' 执行完成，通过率: {batch_report.get('pass_rate', 0)}%"
-            )
-            return jsonify(
-                {
-                    "success": True,
-                    "message": f"任务 '{task['name']}' 执行完成",
-                    "taskId": task_id,
-                    "caseCount": len(testcases),
-                    "report": batch_report,
+                return jsonify(
+                    {
+                        "success": True,
+                        "message": f"任务 '{task['name']}' 执行完成",
+                        "taskId": task_id,
+                        "caseCount": len(testcases),
+                        "report": batch_report,
+                    }
+                )
+            except Exception as exec_error:
+                # 执行失败，更新报告状态为失败，避免临时报告永远停留在"执行中"
+                logger.error(f"任务 '{task['name']}' 执行过程中出错: {str(exec_error)}")
+                error_report = {
+                    "id": temp_report_id,
+                    "name": config["reportName"],
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "status": "fail",
+                    "pass_rate": 0,
+                    "duration": "00:00",
+                    "config": config,
+                    "steps": [],
+                    "executed_cases": executed_case_info,
+                    "description": config.get("description", ""),
+                    "error": str(exec_error),
                 }
-            )
+                save_report(error_report)
+                return jsonify({"error": str(exec_error)}), 500
 
         except FileNotFoundError:
             logger.error("测试用例数据文件不存在")

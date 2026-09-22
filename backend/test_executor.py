@@ -218,35 +218,39 @@ class TestExecutor:
             # 根据浏览器类型启动不同的浏览器
             if browser_name == "firefox":
                 self.browser = await self.playwright.firefox.launch(
-                    headless=headless, args=["--start-maximized"]
+                    headless=headless, args=["--start-maximized", "--kiosk"]
                 )
             elif browser_name == "chromium":
                 self.browser = await self.playwright.chromium.launch(
-                    headless=headless, args=["--start-maximized"]
+                    headless=headless, args=["--start-maximized", "--start-fullscreen"]
                 )
             elif browser_name == "msedge":
                 # Microsoft Edge
                 self.browser = await self.playwright.chromium.launch(
                     channel="msedge",
                     headless=headless,
-                    args=["--start-maximized", "--disable-gpu"],
+                    args=["--start-maximized", "--start-fullscreen", "--disable-gpu"],
                 )
             else:
                 # 默认使用Chrome
                 self.browser = await self.playwright.chromium.launch(
                     channel="chrome",
                     headless=headless,
-                    args=["--start-maximized", "--disable-gpu"],
+                    args=["--start-maximized", "--start-fullscreen", "--disable-gpu"],
                 )
 
             # 创建浏览器上下文配置
-            # 有头模式下窗口已通过--start-maximized铺满屏幕，若再固定viewport会导致
-            # 页面渲染区域被锁定为传入的width/height，与实际窗口大小不一致（表现为窗口只占屏幕一部分）
-            # 因此有头模式不限制viewport，让页面跟随窗口实际大小；无头模式没有真实窗口，仍需固定viewport保证截图尺寸一致
-            context_options = {
-                "viewport": None if not headless else {"width": width, "height": height},
-                "device_scale_factor": 1,
-            }
+            # 有头模式下使用no_viewport让窗口自适应，无头模式固定viewport保证截图尺寸一致
+            if not headless:
+                context_options = {
+                    "viewport": None,
+                    "no_viewport": True,
+                }
+            else:
+                context_options = {
+                    "viewport": {"width": width, "height": height},
+                    "device_scale_factor": 1,
+                }
 
             # 如果提供了Cookie，加载到上下文中
             if cookies:
@@ -376,30 +380,20 @@ class TestExecutor:
         """获取变量值，支持从配置文件加载预定义变量"""
         logger.info(f"尝试获取变量: {var_name}")
 
-        # 如果内存中没有，尝试从文件加载
-        if var_name not in self.variables:
-            logger.info(f"变量 {var_name} 不在内存中，尝试从文件加载")
-            self.load_variables_from_file()
+        # 从 variables_config.json 根据当前环境和项目获取变量值
+        config_value = self.generate_variable_from_config(var_name)
+        if config_value:
+            # 缓存生成的值（对于随机数，每次执行生成一次），并落盘保存
+            # 供用例列表页"变量管理"弹窗展示本次执行实际解析出的变量值，方便排查问题
+            self.variables[var_name] = config_value
+            self.save_variables_to_file()
+            logger.info(f"从配置文件获取并缓存变量: {var_name} = {config_value}")
+            return config_value
 
-        # 获取现有值
-        existing_value = self.variables.get(var_name, "")
-        logger.info(f"从内存获取变量 {var_name} = {existing_value}")
-
-        # 如果变量不存在或值为空，尝试从变量配置中生成
-        if not existing_value:
-            logger.info(f"变量 {var_name} 值为空，尝试从配置文件生成")
-            value = self.generate_variable_from_config(var_name)
-            if value:
-                # 缓存生成的值（对于随机数，每次执行生成一次），并落盘保存
-                # 供用例列表页"变量管理"弹窗展示本次执行实际解析出的变量值，方便排查问题
-                self.variables[var_name] = value
-                self.save_variables_to_file()
-                logger.info(f"从配置生成并缓存变量: {var_name} = {value}")
-                return value
-            else:
-                logger.warning(f"无法从配置文件生成变量: {var_name}")
-
-        return existing_value
+        # 如果配置文件中没有对应环境的变量，抛出异常
+        error_msg = f"变量 {{{{{var_name}}}}} 在环境 '{self.current_environment}' 中不存在"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
     def generate_variable_from_config(self, var_name: str) -> str:
         """从变量配置中生成变量值，根据当前环境和项目筛选"""
@@ -1039,15 +1033,16 @@ class TestExecutor:
                 logger.info("成功设置Authorization请求头")
                 logger.info(f"Token前50字符: {token_to_inject[:50]}...")
 
-            # 增加超时时间并确保等待网络空闲
+            # 使用domcontentloaded等待策略，更快且更可靠
+            # networkidle可能因为页面有持续的网络请求而永远无法达到
             response = await self.page.goto(
-                url, timeout=60000, wait_until="networkidle"
+                url, timeout=60000, wait_until="domcontentloaded"
             )
             status = response.status if response else "未知"
             logger.info(f"页面加载完成，状态码: {status}")
 
-            # 等待额外时间确保页面稳定
-            await asyncio.sleep(1)
+            # 等待额外时间让页面稳定和资源加载
+            await asyncio.sleep(2)
 
             # 获取页面标题
             title = await self.page.title()
@@ -2224,6 +2219,10 @@ class TestExecutor:
                     "success": False,
                     "error": f"未实现的操作类型: {action}",
                 }
+        except ValueError as ve:
+            # 变量不存在等错误，直接向上抛出，让execute_test_case捕获并终止执行
+            logger.error(f"变量错误: {str(ve)}")
+            raise
         except Exception as e:
             logger.error(f"执行步骤失败: {str(e)}")
             return {
@@ -2407,6 +2406,52 @@ async def execute_test_case(
                 logger.info(
                     f"步骤 {i + 1} 执行完成: {step_result.get('success', False)}"
                 )
+            except ValueError as var_error:
+                # 捕获变量不存在的异常，记录失败步骤后再抛出，终止执行
+                logger.error(f"变量错误: {str(var_error)}")
+                step_result = {
+                    "success": False,
+                    "error": str(var_error),
+                    "screenshot": None,
+                }
+                # 获取操作的中文名称
+                action_name = OPERATION_MAPPING.get(
+                    step.get("operate", ""), step.get("operate", "未知操作")
+                )
+                step_info = {
+                    "case_id": case_id,
+                    "case_name": case_name,
+                    "step_number": i + 1,
+                    "action": action_name,
+                    "value": step.get("xpath", ""),
+                    "describe": step.get("describe", ""),
+                    "result": "fail",
+                    "details": step_result,
+                }
+                results.append(step_info)
+                logger.info(f"步骤 {i + 1} 变量错误已记录，终止执行")
+                # 记录后续步骤为跳过
+                if i < len(steps) - 1:
+                    logger.warning(f"变量错误，跳过后续 {len(steps) - i - 1} 个步骤")
+                    for j in range(i + 1, len(steps)):
+                        skipped_step = steps[j]
+                        skipped_action = OPERATION_MAPPING.get(
+                            skipped_step.get("operate", ""),
+                            skipped_step.get("operate", "未知操作"),
+                        )
+                        skip_info = {
+                            "case_id": case_id,
+                            "case_name": case_name,
+                            "step_number": j + 1,
+                            "action": skipped_action,
+                            "value": skipped_step.get("xpath", ""),
+                            "describe": skipped_step.get("describe", ""),
+                            "result": "skip",
+                            "details": {"message": "由于前序步骤失败而跳过"},
+                        }
+                        results.append(skip_info)
+                        logger.info(f"步骤 {j + 1} 已标记为跳过")
+                break  # 跳出步骤循环
             except Exception as step_exception:
                 logger.error(f"步骤 {i + 1} 执行时发生异常: {str(step_exception)}")
                 step_result = {
@@ -2702,106 +2747,132 @@ async def execute_batch_test_cases(
         for i, test_case in enumerate(test_cases):
             case_id = test_case.get("id")
             case_name = test_case.get("name", "未命名测试")
-            steps = expand_testcase_steps(
-                test_case.get("testcase_step", []), {case_id} if case_id else set()
-            )
-
-            # 更新当前用例的环境和项目信息
-            current_env = config.get("executeEnvironment") or test_case.get("environment", "")
-            current_project = test_case.get("project", "")
-            executor.current_environment = current_env
-            executor.current_project = current_project
-
-            logger.info(
-                f"执行测试用例 {i + 1}/{len(test_cases)}: ID={case_id}, 名称={case_name}, 环境={current_env}, 项目={current_project}"
-            )
-
-            # 按当前用例所属项目/环境设置对应的Authorization配置
-            executor.set_auth_profiles(test_case.get("_authProfiles", []))
-
             case_start_time = time.time()
-            case_results = []
 
-            # 执行当前用例的所有步骤
-            for j, step in enumerate(steps):
-                step_result = await executor.execute_step(step)
-
-                # 获取操作的中文名称
-                action_name = OPERATION_MAPPING.get(
-                    step.get("operate", ""), step.get("operate", "未知操作")
+            try:
+                steps = expand_testcase_steps(
+                    test_case.get("testcase_step", []), {case_id} if case_id else set()
                 )
 
-                step_info = {
-                    "case_id": case_id,
-                    "case_name": case_name,
-                    "step_number": j + 1,
-                    "action": action_name,
-                    "value": step.get("xpath", ""),
-                    "describe": step.get("describe", ""),
-                    "result": (
-                        "success" if step_result.get("success", False) else "fail"
-                    ),
-                    "details": step_result,
-                }
+                # 更新当前用例的环境和项目信息
+                current_env = config.get("executeEnvironment") or test_case.get("environment", "")
+                current_project = test_case.get("project", "")
+                executor.current_environment = current_env
+                executor.current_project = current_project
 
-                case_results.append(step_info)
-                total_steps += 1
+                logger.info(
+                    f"执行测试用例 {i + 1}/{len(test_cases)}: ID={case_id}, 名称={case_name}, 环境={current_env}, 项目={current_project}"
+                )
 
-                if step_result.get("success", False):
-                    total_passed_steps += 1
+                # 按当前用例所属项目/环境设置对应的Authorization配置
+                executor.set_auth_profiles(test_case.get("_authProfiles", []))
 
-                # 如果步骤失败且不是最后一个步骤，记录后续步骤为跳过
-                if not step_result.get("success", False) and j < len(steps) - 1:
-                    logger.warning(f"用例 {case_name} 第 {j + 1} 步失败，跳过后续步骤")
-                    for k in range(j + 1, len(steps)):
-                        skipped_step = steps[k]
-                        skipped_action = OPERATION_MAPPING.get(
-                            skipped_step.get("operate", ""),
-                            skipped_step.get("operate", "未知操作"),
-                        )
-                        skip_info = {
-                            "case_id": case_id,
-                            "case_name": case_name,
-                            "step_number": k + 1,
-                            "action": skipped_action,
-                            "value": skipped_step.get("xpath", ""),
-                            "describe": skipped_step.get("describe", ""),
-                            "result": "skip",
-                            "details": {"message": "由于前序步骤失败而跳过"},
-                        }
-                        case_results.append(skip_info)
-                        total_steps += 1
-                    break
+                case_results = []
 
-            # 计算当前用例的执行时间和通过率
-            case_end_time = time.time()
-            case_duration = case_end_time - case_start_time
-            case_passed = sum(1 for r in case_results if r["result"] == "success")
-            case_failed = sum(1 for r in case_results if r["result"] == "fail")
-            case_total = len(
-                [r for r in case_results if r["result"] in ["success", "fail"]]
-            )
+                # 执行当前用例的所有步骤
+                for j, step in enumerate(steps):
+                    step_result = await executor.execute_step(step)
 
-            # 用例级别的通过/失败判定：所有步骤都成功才算用例成功
-            case_success = case_failed == 0 and case_total > 0
-            case_pass_rate = 100 if case_success else 0
+                    # 获取操作的中文名称
+                    action_name = OPERATION_MAPPING.get(
+                        step.get("operate", ""), step.get("operate", "未知操作")
+                    )
 
-            # 记录用例级别的结果
-            case_results_summary.append(
-                {
-                    "case_id": case_id,
-                    "case_name": case_name,
-                    "success": case_success,
-                    "duration": case_duration,
-                }
-            )
+                    step_info = {
+                        "case_id": case_id,
+                        "case_name": case_name,
+                        "step_number": j + 1,
+                        "action": action_name,
+                        "value": step.get("xpath", ""),
+                        "describe": step.get("describe", ""),
+                        "result": (
+                            "success" if step_result.get("success", False) else "fail"
+                        ),
+                        "details": step_result,
+                    }
 
-            # 添加用例汇总信息
-            batch_results.extend(case_results)
+                    case_results.append(step_info)
+                    total_steps += 1
 
-            logger.info(
-                f"用例 {case_name} 执行完成: 用例状态={'成功' if case_success else '失败'}, 步骤通过率={case_passed}/{case_total}, 耗时={case_duration:.2f}秒"
-            )
+                    if step_result.get("success", False):
+                        total_passed_steps += 1
+
+                    # 如果步骤失败且不是最后一个步骤，记录后续步骤为跳过
+                    if not step_result.get("success", False) and j < len(steps) - 1:
+                        logger.warning(f"用例 {case_name} 第 {j + 1} 步失败，跳过后续步骤")
+                        for k in range(j + 1, len(steps)):
+                            skipped_step = steps[k]
+                            skipped_action = OPERATION_MAPPING.get(
+                                skipped_step.get("operate", ""),
+                                skipped_step.get("operate", "未知操作"),
+                            )
+                            skip_info = {
+                                "case_id": case_id,
+                                "case_name": case_name,
+                                "step_number": k + 1,
+                                "action": skipped_action,
+                                "value": skipped_step.get("xpath", ""),
+                                "describe": skipped_step.get("describe", ""),
+                                "result": "skip",
+                                "details": {"message": "由于前序步骤失败而跳过"},
+                            }
+                            case_results.append(skip_info)
+                            total_steps += 1
+                        break
+
+                # 计算当前用例的执行时间和通过率
+                case_end_time = time.time()
+                case_duration = case_end_time - case_start_time
+                case_passed = sum(1 for r in case_results if r["result"] == "success")
+                case_failed = sum(1 for r in case_results if r["result"] == "fail")
+                case_total = len(
+                    [r for r in case_results if r["result"] in ["success", "fail"]]
+                )
+
+                # 用例级别的通过/失败判定：所有步骤都成功才算用例成功
+                case_success = case_failed == 0 and case_total > 0
+
+                # 记录用例级别的结果
+                case_results_summary.append(
+                    {
+                        "case_id": case_id,
+                        "case_name": case_name,
+                        "success": case_success,
+                        "duration": case_duration,
+                    }
+                )
+
+                # 添加用例汇总信息
+                batch_results.extend(case_results)
+
+                logger.info(
+                    f"用例 {case_name} 执行完成: 用例状态={'成功' if case_success else '失败'}, 步骤通过率={case_passed}/{case_total}, 耗时={case_duration:.2f}秒"
+                )
+
+            except Exception as case_error:
+                # 单个用例执行异常：记录为该用例失败，不影响后续用例继续执行
+                logger.error(f"用例 {case_name} 执行过程中发生错误: {str(case_error)}")
+                case_duration = time.time() - case_start_time
+                batch_results.append(
+                    {
+                        "case_id": case_id,
+                        "case_name": case_name,
+                        "step_number": 0,
+                        "action": "用例执行异常",
+                        "value": "",
+                        "describe": "用例执行过程中发生错误",
+                        "result": "error",
+                        "details": {"error": str(case_error)},
+                    }
+                )
+                case_results_summary.append(
+                    {
+                        "case_id": case_id,
+                        "case_name": case_name,
+                        "success": False,
+                        "duration": case_duration,
+                    }
+                )
 
     except Exception as e:
         logger.error(f"批量测试执行过程中发生错误: {str(e)}")
@@ -3209,24 +3280,24 @@ class CookieManager:
             # 根据浏览器类型启动不同的浏览器
             if browser_name == "firefox":
                 self.browser = await self.playwright.firefox.launch(
-                    headless=headless, args=["--start-maximized"]
+                    headless=headless, args=["--start-maximized", "--kiosk"]
                 )
             elif browser_name == "chromium":
                 self.browser = await self.playwright.chromium.launch(
-                    headless=headless, args=["--start-maximized"]
+                    headless=headless, args=["--start-maximized", "--start-fullscreen"]
                 )
             elif browser_name == "msedge":
                 self.browser = await self.playwright.chromium.launch(
                     channel="msedge",
                     headless=headless,
-                    args=["--start-maximized", "--disable-gpu"],
+                    args=["--start-maximized", "--start-fullscreen", "--disable-gpu"],
                 )
             else:
                 # 默认使用Chrome
                 self.browser = await self.playwright.chromium.launch(
                     channel="chrome",
                     headless=headless,
-                    args=["--start-maximized", "--disable-gpu"],
+                    args=["--start-maximized", "--start-fullscreen", "--disable-gpu"],
                 )
 
             # 创建新的上下文（不加载已有的cookie）
@@ -3352,24 +3423,24 @@ class AdminCookieManager:
             # 根据浏览器类型启动不同的浏览器
             if browser_name == "firefox":
                 self.browser = await self.playwright.firefox.launch(
-                    headless=headless, args=["--start-maximized"]
+                    headless=headless, args=["--start-maximized", "--kiosk"]
                 )
             elif browser_name == "chromium":
                 self.browser = await self.playwright.chromium.launch(
-                    headless=headless, args=["--start-maximized"]
+                    headless=headless, args=["--start-maximized", "--start-fullscreen"]
                 )
             elif browser_name == "msedge":
                 self.browser = await self.playwright.chromium.launch(
                     channel="msedge",
                     headless=headless,
-                    args=["--start-maximized", "--disable-gpu"],
+                    args=["--start-maximized", "--start-fullscreen", "--disable-gpu"],
                 )
             else:
                 # 默认使用Chrome
                 self.browser = await self.playwright.chromium.launch(
                     channel="chrome",
                     headless=headless,
-                    args=["--start-maximized", "--disable-gpu"],
+                    args=["--start-maximized", "--start-fullscreen", "--disable-gpu"],
                 )
 
             # 创建新的上下文（不加载已有的cookie）

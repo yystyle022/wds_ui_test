@@ -1,190 +1,32 @@
 [
   {
-    "id": 1789885565,
-    "test_id": 1,
-    "name": "企服平台登录成功",
-    "time": "2026-09-20 14:26:05",
-    "status": "success",
-    "pass_rate": 100,
-    "duration": "00:17",
+    "id": 1790068131,
+    "test_id": "sequential_batch_1790068156",
+    "name": "任务执行报告-测试",
+    "time": "2026-09-22 17:08:51",
+    "status": "partial",
+    "pass_rate": 50,
+    "duration": "00:25",
     "config": {
-      "browser": "msedge",
-      "headless": false,
-      "saveScreenshots": true,
-      "enableMultiThread": false,
-      "clientAuthToken": "",
-      "adminAuthToken": "",
-      "privateAuthToken": "",
-      "executeEnvironment": "test环境",
-      "authProfiles": [
-        {
-          "name": "test_Authorization",
-          "domains": [
-            "mysql_value",
-            "https://test-esp.wdsheng.com/"
-          ],
-          "token": "123"
-        }
-      ],
-      "loginStateCookies": []
-    },
-    "steps": [
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 1,
-        "action": "打开网址",
-        "value": "{{wds_client_host}}",
-        "describe": "打开企服平台首页",
-        "result": "success",
-        "details": {
-          "title": "万大圣AI企服平台_更懂产业的AI严选企服平台_万联易达_万大圣",
-          "status": 200,
-          "screenshot": "screenshots/1789885573_open_url.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 2,
-        "action": "通过文本点击",
-        "value": "",
-        "describe": "点击登录按钮弹出登录弹窗",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885574_click_text.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 3,
-        "action": "通过文本点击",
-        "value": "",
-        "describe": "点击密码登录，使用密码进行登录",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885574_click_text.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 4,
-        "action": "输入内容",
-        "value": "//input[@placeholder=\"请输入手机号\"]",
-        "describe": "账号输入框-输入手机号",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885575_input.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 5,
-        "action": "输入内容",
-        "value": "//input[@placeholder=\"请输入密码\"]",
-        "describe": "密码输入框-输入登录密码",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885576_input.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 6,
-        "action": "点击元素",
-        "value": "//span[@class=\"login-agreement__check-box\"]",
-        "describe": "勾选协议-点击协议勾选框",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885578_click.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 7,
-        "action": "通过文本点击",
-        "value": "",
-        "describe": "点击登录按钮",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885578_click_text.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 8,
-        "action": "等待时长",
-        "value": "2",
-        "describe": "等待登录跳转首页完成",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885581_wait.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 1,
-        "case_name": "企服平台登录成功",
-        "step_number": 9,
-        "action": "检查元素是否存在",
-        "value": "//div[@class=\"app-header-avatar\"]",
-        "describe": "验证登录成功-登录头像存在",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789885582_check_element_exists.png",
-          "success": true,
-          "message": "元素存在且可见: //div[@class=\"app-header-avatar\"]"
-        }
-      }
-    ],
-    "executed_cases": [
-      {
-        "id": 1,
-        "name": "企服平台登录成功"
-      }
-    ]
-  },
-  {
-    "id": 1789893905,
-    "test_id": 1,
-    "name": "企服平台登录成功",
-    "time": "2026-09-20 16:45:05",
-    "status": "success",
-    "pass_rate": 100,
-    "duration": "00:30",
-    "config": {
-      "browser": "msedge",
+      "browser": "chrome",
       "headless": true,
       "saveScreenshots": true,
       "enableMultiThread": false,
-      "clientAuthToken": "",
-      "adminAuthToken": "",
-      "privateAuthToken": "",
       "executeEnvironment": "test环境",
-      "authProfiles": [
-        {
-          "name": "test_Authorization",
-          "domains": [
-            "mysql_value",
-            "https://test-esp.wdsheng.com/"
-          ],
-          "token": "123"
-        }
+      "reportName": "任务执行报告-测试",
+      "description": "任务: 测试 - 自动执行 2 个用例"
+    },
+    "batch_info": {
+      "total_cases": 2,
+      "case_ids": [
+        1,
+        2
       ],
-      "loginStateCookies": []
+      "case_names": [
+        "企服平台登录成功",
+        "运营管理平台登录成功"
+      ],
+      "execution_mode": "sequential"
     },
     "steps": [
       {
@@ -196,9 +38,9 @@
         "describe": "打开企服平台首页",
         "result": "success",
         "details": {
-          "title": "万大圣AI企服平台_更懂产业的AI严选企服平台_万联易达_万大圣",
+          "title": "万大圣AI企服平台_加速每一家企业的AI进化_万联易达_万大圣",
           "status": 200,
-          "screenshot": "screenshots/1789893916_open_url.png",
+          "screenshot": "screenshots/1790068134_open_url.png",
           "success": true
         }
       },
@@ -211,7 +53,7 @@
         "describe": "点击登录按钮弹出登录弹窗",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893921_click.png",
+          "screenshot": "screenshots/1790068137_click.png",
           "success": true
         }
       },
@@ -224,7 +66,7 @@
         "describe": "点击密码登录，使用密码进行登录",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893923_click.png",
+          "screenshot": "screenshots/1790068139_click.png",
           "success": true
         }
       },
@@ -237,7 +79,7 @@
         "describe": "账号输入框-输入手机号",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893924_input.png",
+          "screenshot": "screenshots/1790068140_input.png",
           "success": true
         }
       },
@@ -250,7 +92,7 @@
         "describe": "密码输入框-输入登录密码",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893925_input.png",
+          "screenshot": "screenshots/1790068142_input.png",
           "success": true
         }
       },
@@ -263,7 +105,7 @@
         "describe": "勾选协议-点击协议勾选框",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893928_click.png",
+          "screenshot": "screenshots/1790068145_click.png",
           "success": true
         }
       },
@@ -276,7 +118,7 @@
         "describe": "点击登录按钮",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893930_click.png",
+          "screenshot": "screenshots/1790068147_click.png",
           "success": true
         }
       },
@@ -289,7 +131,7 @@
         "describe": "等待登录跳转首页完成",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893932_wait.png",
+          "screenshot": "screenshots/1790068151_wait.png",
           "success": true
         }
       },
@@ -297,244 +139,222 @@
         "case_id": 1,
         "case_name": "企服平台登录成功",
         "step_number": 9,
-        "action": "检查元素是否存在",
+        "action": "检查元素存在",
         "value": "//div[@class=\"app-header-avatar\"]",
         "describe": "验证登录成功-登录头像存在",
         "result": "success",
         "details": {
-          "screenshot": "screenshots/1789893934_check_element_exists.png",
+          "screenshot": "screenshots/1790068151_check_element_exists.png",
           "success": true,
           "message": "元素存在且可见: //div[@class=\"app-header-avatar\"]"
+        }
+      },
+      {
+        "case_id": 2,
+        "case_name": "运营管理平台登录成功",
+        "step_number": 0,
+        "action": "用例执行异常",
+        "value": "",
+        "describe": "用例执行过程中发生错误",
+        "result": "error",
+        "details": {
+          "error": "变量 {{asd}} 在环境 'test环境' 中不存在"
         }
       }
     ],
     "executed_cases": [
       {
         "id": 1,
-        "name": "企服平台登录成功"
+        "name": "企服平台登录成功",
+        "client": "未知客户端",
+        "page": "登录"
+      },
+      {
+        "id": 2,
+        "name": "运营管理平台登录成功",
+        "client": "未知客户端",
+        "page": "登录"
       }
-    ]
+    ],
+    "description": "任务: 测试 - 自动执行 2 个用例"
   },
   {
-    "id": 1789896043,
-    "test_id": 2,
-    "name": "测试登录",
-    "time": "2026-09-20 17:20:43",
-    "status": "fail",
-    "pass_rate": 0,
-    "duration": "00:11",
+    "id": 1790069375,
+    "test_id": "sequential_batch_1790069401",
+    "name": "任务执行报告-测试",
+    "time": "2026-09-22 17:29:35",
+    "status": "partial",
+    "pass_rate": 50,
+    "duration": "00:26",
     "config": {
-      "browser": "msedge",
-      "headless": false,
+      "browser": "chrome",
+      "headless": true,
       "saveScreenshots": true,
       "enableMultiThread": false,
-      "clientAuthToken": "",
-      "adminAuthToken": "",
-      "privateAuthToken": "",
-      "executeEnvironment": "test环境",
-      "authProfiles": [
-        {
-          "name": "test_Authorization",
-          "domains": [
-            "mysql_value",
-            "https://test-esp.wdsheng.com/"
-          ],
-          "token": "123"
-        }
+      "executeEnvironment": "uat环境",
+      "reportName": "任务执行报告-测试",
+      "description": "任务: 测试 - 自动执行 2 个用例"
+    },
+    "batch_info": {
+      "total_cases": 2,
+      "case_ids": [
+        1,
+        2
       ],
-      "loginStateCookies": []
+      "case_names": [
+        "企服平台登录成功",
+        "运营管理平台登录成功"
+      ],
+      "execution_mode": "sequential"
     },
     "steps": [
       {
-        "case_id": 2,
-        "case_name": "测试登录",
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
         "step_number": 1,
+        "action": "打开网址",
+        "value": "{{wds_client_host}}",
+        "describe": "打开企服平台首页",
+        "result": "success",
+        "details": {
+          "title": "万大圣AI企服平台_加速每一家企业的AI进化_万联易达_万大圣",
+          "status": 200,
+          "screenshot": "screenshots/1790069378_open_url.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 2,
         "action": "点击元素",
-        "value": "#app > div > header > div > div.header-right > button.header-login-btn",
+        "value": " 登录/注册 ",
+        "describe": "点击登录按钮弹出登录弹窗",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790069381_click.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 3,
+        "action": "点击元素",
+        "value": "密码登录",
+        "describe": "点击密码登录，使用密码进行登录",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790069383_click.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 4,
+        "action": "输入内容",
+        "value": "//input[@placeholder=\"请输入手机号\"]",
+        "describe": "账号输入框-输入手机号",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790069384_input.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 5,
+        "action": "输入内容",
+        "value": "//input[@placeholder=\"请输入密码\"]",
+        "describe": "密码输入框-输入登录密码",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790069386_input.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 6,
+        "action": "点击元素",
+        "value": "//span[@class=\"login-agreement__check-box\"]",
+        "describe": "勾选协议-点击协议勾选框",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790069388_click.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 7,
+        "action": "点击元素",
+        "value": " 登 录 ",
         "describe": "点击登录按钮",
-        "result": "fail",
+        "result": "success",
         "details": {
-          "error": "Page.wait_for_selector: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\"#app > div > header > div > div.header-right > button.header-login-btn\")\n",
-          "screenshot": "screenshots/1789896054_click_error.png",
-          "success": false
+          "screenshot": "screenshots/1790069390_click.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 8,
+        "action": "等待时长",
+        "value": "2",
+        "describe": "等待登录跳转首页完成",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790069393_wait.png",
+          "success": true
+        }
+      },
+      {
+        "case_id": 1,
+        "case_name": "企服平台登录成功",
+        "step_number": 9,
+        "action": "检查元素存在",
+        "value": "//div[@class=\"app-header-avatar\"]",
+        "describe": "验证登录成功-登录头像存在",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790069393_check_element_exists.png",
+          "success": true,
+          "message": "元素存在且可见: //div[@class=\"app-header-avatar\"]"
         }
       },
       {
         "case_id": 2,
-        "case_name": "测试登录",
-        "step_number": 2,
-        "action": "等待时长",
-        "value": "5",
-        "describe": "等待5秒",
-        "result": "skip",
+        "case_name": "运营管理平台登录成功",
+        "step_number": 0,
+        "action": "用例执行异常",
+        "value": "",
+        "describe": "用例执行过程中发生错误",
+        "result": "error",
         "details": {
-          "message": "由于前序步骤失败而跳过"
+          "error": "变量 {{asd}} 在环境 'uat环境' 中不存在"
         }
       }
     ],
     "executed_cases": [
       {
+        "id": 1,
+        "name": "企服平台登录成功",
+        "client": "未知客户端",
+        "page": "登录"
+      },
+      {
         "id": 2,
-        "name": "测试登录"
-      }
-    ]
-  },
-  {
-    "id": 1789896161,
-    "test_id": 2,
-    "name": "测试登录",
-    "time": "2026-09-20 17:22:41",
-    "status": "success",
-    "pass_rate": 100,
-    "duration": "00:34",
-    "config": {
-      "browser": "msedge",
-      "headless": false,
-      "saveScreenshots": true,
-      "enableMultiThread": false,
-      "clientAuthToken": "",
-      "adminAuthToken": "",
-      "privateAuthToken": "",
-      "executeEnvironment": "test环境",
-      "authProfiles": [
-        {
-          "name": "test_Authorization",
-          "domains": [
-            "mysql_value",
-            "https://test-esp.wdsheng.com/"
-          ],
-          "token": "123"
-        }
-      ],
-      "loginStateCookies": []
-    },
-    "steps": [
-      {
-        "case_id": 2,
-        "case_name": "测试登录",
-        "step_number": 1,
-        "action": "打开网址",
-        "value": "{{wds_client_host}}",
-        "describe": "登录官网",
-        "result": "success",
-        "details": {
-          "title": "万大圣AI企服平台_更懂产业的AI严选企服平台_万联易达_万大圣",
-          "status": 200,
-          "screenshot": "screenshots/1789896186_open_url.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 2,
-        "case_name": "测试登录",
-        "step_number": 2,
-        "action": "点击元素",
-        "value": "#app > div > header > div > div.header-right > button.header-login-btn",
-        "describe": "点击登录",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789896189_click.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 2,
-        "case_name": "测试登录",
-        "step_number": 3,
-        "action": "等待时长",
-        "value": "5",
-        "describe": "等待5秒",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789896195_wait.png",
-          "success": true
-        }
+        "name": "运营管理平台登录成功",
+        "client": "未知客户端",
+        "page": "登录"
       }
     ],
-    "executed_cases": [
-      {
-        "id": 2,
-        "name": "测试登录"
-      }
-    ]
-  },
-  {
-    "id": 1789897847,
-    "test_id": 2,
-    "name": "测试登录",
-    "time": "2026-09-20 17:50:47",
-    "status": "success",
-    "pass_rate": 100,
-    "duration": "00:15",
-    "config": {
-      "browser": "msedge",
-      "headless": false,
-      "saveScreenshots": true,
-      "enableMultiThread": false,
-      "clientAuthToken": "",
-      "adminAuthToken": "",
-      "privateAuthToken": "",
-      "executeEnvironment": "test环境",
-      "authProfiles": [
-        {
-          "name": "test_Authorization",
-          "domains": [
-            "mysql_value",
-            "https://test-esp.wdsheng.com/"
-          ],
-          "token": "123"
-        }
-      ],
-      "loginStateCookies": []
-    },
-    "steps": [
-      {
-        "case_id": 2,
-        "case_name": "测试登录",
-        "step_number": 1,
-        "action": "打开网址",
-        "value": "{{wds_client_host}}",
-        "describe": "登录官网",
-        "result": "success",
-        "details": {
-          "title": "万大圣AI企服平台_更懂产业的AI严选企服平台_万联易达_万大圣",
-          "status": 200,
-          "screenshot": "screenshots/1789897855_open_url.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 2,
-        "case_name": "测试登录",
-        "step_number": 2,
-        "action": "点击元素",
-        "value": "#app > div > header > div > div.header-right > button.header-login-btn",
-        "describe": "点击登录",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789897856_click.png",
-          "success": true
-        }
-      },
-      {
-        "case_id": 2,
-        "case_name": "测试登录",
-        "step_number": 3,
-        "action": "等待时长",
-        "value": "5",
-        "describe": "等待5秒",
-        "result": "success",
-        "details": {
-          "screenshot": "screenshots/1789897862_wait.png",
-          "success": true
-        }
-      }
-    ],
-    "executed_cases": [
-      {
-        "id": 2,
-        "name": "测试登录"
-      }
-    ]
+    "description": "任务: 测试 - 自动执行 2 个用例"
   }
 ]
