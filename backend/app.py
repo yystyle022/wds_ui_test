@@ -3107,6 +3107,214 @@ def delete_environment(env_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+# ==================== 数据库配置管理 API ====================
+DATABASES_FILE = "databases.json"
+
+
+def load_databases():
+    """加载数据库配置列表"""
+    try:
+        if os.path.exists(DATABASES_FILE):
+            with open(DATABASES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return []
+    except Exception as e:
+        logger.error(f"加载数据库配置列表失败: {str(e)}")
+        return []
+
+
+def save_databases(databases):
+    """保存数据库配置列表"""
+    try:
+        with open(DATABASES_FILE, "w", encoding="utf-8") as f:
+            json.dump(databases, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"保存数据库配置列表失败: {str(e)}")
+        return False
+
+
+@app.route("/api/databases", methods=["GET"])
+def get_databases():
+    """获取数据库配置列表"""
+    try:
+        databases = load_databases()
+        return jsonify({"success": True, "databases": databases})
+    except Exception as e:
+        logger.error(f"获取数据库配置列表失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/databases", methods=["POST"])
+def add_database():
+    """新增数据库配置"""
+    try:
+        data = request.get_json()
+        name = data.get("name")
+        db_type = data.get("type")
+        host = data.get("host")
+        port = data.get("port")
+        username = data.get("username")
+        database = data.get("database")
+
+        if not name:
+            return jsonify({"success": False, "error": "配置名称不能为空"}), 400
+        if db_type not in ("mysql", "postgresql"):
+            return jsonify({"success": False, "error": "数据库类型不支持"}), 400
+        if not host or not port or not username or not database:
+            return jsonify({"success": False, "error": "请完整填写连接信息"}), 400
+
+        databases = load_databases()
+        if any(d.get("name") == name for d in databases):
+            return jsonify({"success": False, "error": "配置名称已存在"}), 400
+
+        new_id = max((d.get("id", 0) for d in databases), default=0) + 1
+        new_database = {
+            "id": new_id,
+            "name": name,
+            "type": db_type,
+            "host": host,
+            "port": port,
+            "username": username,
+            "password": data.get("password", ""),
+            "database": database,
+            "project": data.get("project") or "",
+            "environment": data.get("environment") or "",
+            "description": data.get("description", ""),
+            "createTime": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        databases.append(new_database)
+
+        if save_databases(databases):
+            logger.info(f"新增数据库配置成功: {name}")
+            return jsonify({"success": True, "database": new_database})
+        else:
+            return jsonify({"success": False, "error": "保存数据库配置失败"}), 500
+    except Exception as e:
+        logger.error(f"新增数据库配置失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/databases/<int:db_id>", methods=["PUT"])
+def update_database(db_id):
+    """编辑数据库配置"""
+    try:
+        data = request.get_json()
+        name = data.get("name")
+        db_type = data.get("type")
+        host = data.get("host")
+        port = data.get("port")
+        username = data.get("username")
+        database = data.get("database")
+
+        if not name:
+            return jsonify({"success": False, "error": "配置名称不能为空"}), 400
+        if db_type not in ("mysql", "postgresql"):
+            return jsonify({"success": False, "error": "数据库类型不支持"}), 400
+        if not host or not port or not username or not database:
+            return jsonify({"success": False, "error": "请完整填写连接信息"}), 400
+
+        databases = load_databases()
+        db_config = next((d for d in databases if d.get("id") == db_id), None)
+        if db_config is None:
+            return jsonify({"success": False, "error": "数据库配置不存在"}), 404
+
+        if any(d.get("name") == name and d.get("id") != db_id for d in databases):
+            return jsonify({"success": False, "error": "配置名称已存在"}), 400
+
+        db_config["name"] = name
+        db_config["type"] = db_type
+        db_config["host"] = host
+        db_config["port"] = port
+        db_config["username"] = username
+        db_config["password"] = data.get("password", db_config.get("password", ""))
+        db_config["database"] = database
+        db_config["project"] = data.get("project") or ""
+        db_config["environment"] = data.get("environment") or ""
+        db_config["description"] = data.get("description", "")
+
+        if save_databases(databases):
+            logger.info(f"编辑数据库配置成功: {name}")
+            return jsonify({"success": True, "database": db_config})
+        else:
+            return jsonify({"success": False, "error": "保存数据库配置失败"}), 500
+    except Exception as e:
+        logger.error(f"编辑数据库配置失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/databases/<int:db_id>", methods=["DELETE"])
+def delete_database(db_id):
+    """删除数据库配置"""
+    try:
+        databases = load_databases()
+        db_config = next((d for d in databases if d.get("id") == db_id), None)
+        if db_config is None:
+            return jsonify({"success": False, "error": "数据库配置不存在"}), 404
+
+        databases = [d for d in databases if d.get("id") != db_id]
+
+        if save_databases(databases):
+            logger.info(f"删除数据库配置成功: {db_config.get('name')}")
+            return jsonify({"success": True, "message": "数据库配置删除成功"})
+        else:
+            return jsonify({"success": False, "error": "删除数据库配置失败"}), 500
+    except Exception as e:
+        logger.error(f"删除数据库配置失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/databases/test", methods=["POST"])
+def test_database_connection():
+    """测试数据库连接"""
+    try:
+        data = request.get_json() or {}
+        db_type = data.get("type")
+        host = data.get("host")
+        port = data.get("port")
+        username = data.get("username")
+        password = data.get("password", "")
+        database = data.get("database")
+
+        if db_type not in ("mysql", "postgresql"):
+            return jsonify({"success": False, "error": "数据库类型不支持"})
+        if not host or not port or not username or not database:
+            return jsonify({"success": False, "error": "请完整填写连接信息"})
+
+        if db_type == "mysql":
+            import pymysql
+
+            conn = pymysql.connect(
+                host=host,
+                port=int(port),
+                user=username,
+                password=password,
+                database=database,
+                connect_timeout=5,
+            )
+            conn.close()
+        else:
+            import psycopg2
+
+            conn = psycopg2.connect(
+                host=host,
+                port=int(port),
+                user=username,
+                password=password,
+                dbname=database,
+                connect_timeout=5,
+            )
+            conn.close()
+
+        return jsonify({"success": True, "message": "连接成功"})
+    except ImportError as e:
+        logger.error(f"数据库驱动未安装: {str(e)}")
+        return jsonify({"success": False, "error": f"数据库驱动未安装: {str(e)}"})
+    except Exception as e:
+        logger.error(f"测试数据库连接失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)})
+
+
 # ==================== 测试用例列表 API ====================
 @app.route("/api/testcases", methods=["GET"])
 def get_testcases():
