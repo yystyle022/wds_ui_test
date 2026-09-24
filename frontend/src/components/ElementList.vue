@@ -341,13 +341,22 @@ export default defineComponent({
     const locateTypeOptions = [
       { label: "XPath", value: "xpath" },
       { label: "CSS", value: "css" },
+      { label: "Poco选择器", value: "poco" },
     ];
 
     const getLocateLabel = (locateType?: string) =>
-      locateType === "css" ? "CSS选择器" : "XPath";
+      locateType === "css"
+        ? "CSS选择器"
+        : locateType === "poco"
+        ? "Poco选择器"
+        : "XPath";
 
     const getLocatePlaceholder = (locateType?: string) =>
-      locateType === "css" ? "请输入元素的CSS选择器" : "请输入元素的XPath";
+      locateType === "css"
+        ? "请输入元素的CSS选择器"
+        : locateType === "poco"
+        ? "请输入Poco选择器，如 text=登录;type=android.widget.Button"
+        : "请输入元素的XPath";
 
     const fetchData = async () => {
       try {
@@ -701,7 +710,9 @@ export default defineComponent({
           align: "center",
           width: 90,
           render(row) {
-            return row.locate_type === "css" ? "CSS" : "XPATH";
+            if (row.locate_type === "css") return "CSS";
+            if (row.locate_type === "poco") return "Poco";
+            return "XPATH";
           },
         },
         {

@@ -174,5 +174,40 @@
         "element_name": "点击登录按钮"
       }
     ]
+  },
+  {
+    "id": 3,
+    "project": "万大圣",
+    "module": "app端登录",
+    "page": "登录",
+    "name": "安卓端登录成功",
+    "type": "主流程",
+    "testcase_step": [
+      {
+        "step": 1,
+        "operate": "launch_app",
+        "input_value": "",
+        "describe": "打开万大圣app",
+        "locate_type": "poco",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "com.wlit.esp",
+        "element_name": "打开万大圣app"
+      },
+      {
+        "step": 2,
+        "operate": "click",
+        "input_value": "",
+        "describe": "测试",
+        "locate_type": "poco",
+        "expected_value": "",
+        "var_name": "",
+        "referenced_case_id": null,
+        "xpath": "text=我的",
+        "element_name": "测试"
+      }
+    ],
+    "platform": "android"
   }
 ]

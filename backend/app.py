@@ -14,6 +14,7 @@ from test_executor import (
     execute_batch_test_cases,
     execute_batch_test_cases_parallel,
 )
+from mobile_executor import execute_test_case_mobile
 
 # 配置日志 - 同时输出到控制台和文件
 LOG_FILE = "app.log"
@@ -649,18 +650,24 @@ def get_data():
         page = request.args.get("page", "").lower()
         name = request.args.get("name", "").lower()
         type = request.args.get("type", "").lower()
+        platform = request.args.get("platform", "").lower()
 
         # 记录查询条件
         logger.info(
-            f"获取数据查询条件: project={project}, module={module}, page={page}, name={name}, type={type}"
+            f"获取数据查询条件: project={project}, module={module}, page={page}, name={name}, type={type}, platform={platform}"
         )
 
         # 读取数据文件
         with open("data.json", "r", encoding="utf-8") as file:
             data = json.load(file)
 
+        # 为所有数据添加默认的 platform 字段（如果没有的话）
+        for item in data:
+            if "platform" not in item:
+                item["platform"] = "web"
+
         # 如果有查询参数，进行过滤
-        if project or module or page or name or type:
+        if project or module or page or name or type or platform:
             filtered_data = []
             for item in data:
                 if (
@@ -669,6 +676,7 @@ def get_data():
                     or (page and page not in item.get("page", "").lower())
                     or (name and name not in item.get("name", "").lower())
                     or (type and type not in item.get("type", "").lower())
+                    or (platform and platform != item.get("platform", "web").lower())
                 ):
                     continue
                 filtered_data.append(item)
@@ -713,6 +721,7 @@ def add_testcase():
             "page": new_case.get("page"),
             "name": new_case.get("name"),
             "type": new_case.get("type"),
+            "platform": new_case.get("platform", "web"),
             "testcase_step": new_case.get("testcase_step", []),
         }
         logger.info(f"新建用例信息: {testcase}")
@@ -795,49 +804,67 @@ def execute_test():
                     "saveScreenshots": settings.get("saveScreenshots", False),
                 }
 
-            # 按项目+环境组装按域名区分的Authorization配置（用例内打开不同域名时自动切换Token）
-            # 分别受全局设置中"是否使用Authorization"/"是否使用登录态"开关控制，默认均为使用
-            exec_environment = config.get("executeEnvironment") or testcase.get("environment", "")
-            global_settings = load_settings()
-            use_authorization = global_settings.get("useAuthorization", True)
-            use_login_state = global_settings.get("useLoginState", True)
+            platform = testcase.get("platform", "web")
 
-            config["authProfiles"] = (
-                get_auth_profiles_for_execution(project_name, exec_environment)
-                if use_authorization
-                else []
-            )
-            config["loginStateCookies"] = (
-                get_login_state_cookies_for_execution(project_name, exec_environment)
-                if use_login_state
-                else []
-            )
+            if platform == "android":
+                # 移动端用例：解析执行设备，跳过Web端特有的Authorization/登录态组装
+                device_id = config.get("deviceId")
+                if not device_id:
+                    device_id = load_settings().get("defaultDevice")
+                device = next(
+                    (d for d in load_devices() if d.get("id") == device_id), None
+                )
+                if not device:
+                    logger.error("执行失败: 未找到可用的移动端执行设备")
+                    return (
+                        jsonify({"error": "未配置执行设备，请先在设置中选择默认设备"}),
+                        400,
+                    )
+                config["deviceSerial"] = device.get("serial")
+            else:
+                # 按项目+环境组装按域名区分的Authorization配置（用例内打开不同域名时自动切换Token）
+                # 分别受全局设置中"是否使用Authorization"/"是否使用登录态"开关控制，默认均为使用
+                exec_environment = config.get("executeEnvironment") or testcase.get("environment", "")
+                global_settings = load_settings()
+                use_authorization = global_settings.get("useAuthorization", True)
+                use_login_state = global_settings.get("useLoginState", True)
 
-            # 检查用例是否与登录相关（需要禁用认证信息）
-            has_login = False
+                config["authProfiles"] = (
+                    get_auth_profiles_for_execution(project_name, exec_environment)
+                    if use_authorization
+                    else []
+                )
+                config["loginStateCookies"] = (
+                    get_login_state_cookies_for_execution(project_name, exec_environment)
+                    if use_login_state
+                    else []
+                )
 
-            # 检查步骤的xpath是否为登录按钮，或者操作类型是否为login_website
-            for step in testcase.get("testcase_step", []):
-                step_xpath = step.get("xpath", "")
-                step_operate = step.get("operate", "")
+                # 检查用例是否与登录相关（需要禁用认证信息）
+                has_login = False
 
-                # 检查xpath是否为登录按钮
-                if step_xpath == '//span[text()="登 录"]':
-                    has_login = True
-                    logger.info(f"检测到登录按钮XPath: {step_xpath}")
-                    break
+                # 检查步骤的xpath是否为登录按钮，或者操作类型是否为login_website
+                for step in testcase.get("testcase_step", []):
+                    step_xpath = step.get("xpath", "")
+                    step_operate = step.get("operate", "")
 
-                # 检查操作类型是否为login_website
-                if step_operate == "login_website":
-                    has_login = True
-                    logger.info(f"检测到login_website操作")
-                    break
+                    # 检查xpath是否为登录按钮
+                    if step_xpath == '//span[text()="登 录"]':
+                        has_login = True
+                        logger.info(f"检测到登录按钮XPath: {step_xpath}")
+                        break
 
-            # 如果检测到与登录相关，清空认证配置
-            if has_login:
-                logger.info("检测到用例与登录相关，禁用认证信息配置")
-                config["authProfiles"] = []
-                config["loginStateCookies"] = []
+                    # 检查操作类型是否为login_website
+                    if step_operate == "login_website":
+                        has_login = True
+                        logger.info(f"检测到login_website操作")
+                        break
+
+                # 如果检测到与登录相关，清空认证配置
+                if has_login:
+                    logger.info("检测到用例与登录相关，禁用认证信息配置")
+                    config["authProfiles"] = []
+                    config["loginStateCookies"] = []
 
             # 创建一个"执行中"状态的临时报告
             from datetime import datetime
@@ -870,7 +897,10 @@ def execute_test():
             import asyncio
 
             try:
-                report = asyncio.run(execute_test_case(testcase, config))
+                if platform == "android":
+                    report = asyncio.run(execute_test_case_mobile(testcase, config))
+                else:
+                    report = asyncio.run(execute_test_case(testcase, config))
 
                 # 使用相同的报告ID，覆盖之前的"执行中"报告
                 report["id"] = temp_report_id
@@ -981,6 +1011,22 @@ def execute_batch():
                 return (
                     jsonify({"error": "No test cases found with the specified IDs"}),
                     404,
+                )
+
+            android_case_names = [
+                c.get("name", c.get("id"))
+                for c in testcases
+                if c.get("platform", "web") == "android"
+            ]
+            if android_case_names:
+                logger.error(f"批量执行不支持Android用例: {android_case_names}")
+                return (
+                    jsonify(
+                        {
+                            "error": f"多选批量执行暂不支持Android用例，请通过任务执行: {', '.join(map(str, android_case_names))}"
+                        }
+                    ),
+                    400,
                 )
 
             # 按每个用例所属的项目+环境，各自组装按域名区分的Authorization配置和登录态Cookie
@@ -1144,6 +1190,9 @@ def get_testcase(id):
         testcase = next((case for case in data if case["id"] == id), None)
 
         if testcase:
+            # 为旧数据添加默认的 platform 字段
+            if "platform" not in testcase:
+                testcase["platform"] = "web"
             logger.info(f"获取用例成功 - ID: {id}, 名称: {testcase.get('name')}")
             return jsonify(testcase)
         else:
@@ -1267,6 +1316,7 @@ def update_testcase(id):
                 "page": request_data["page"],
                 "name": request_data["name"],
                 "type": request_data["type"],
+                "platform": request_data.get("platform", "web"),
                 "testcase_step": request_data["testcase_step"],
             }
         )
@@ -2258,11 +2308,28 @@ def execute_task(task_id):
             if not testcases:
                 return jsonify({"error": "任务中的用例均未找到"}), 404
 
+            # 按平台拆分：Web用例走Playwright，Android用例走Airtest/Poco
+            web_cases = [c for c in testcases if c.get("platform", "web") != "android"]
+            android_cases = [c for c in testcases if c.get("platform", "web") == "android"]
+
+            if android_cases:
+                device_id = settings.get("defaultDevice")
+                device = next(
+                    (d for d in load_devices() if d.get("id") == device_id), None
+                )
+                if not device:
+                    return (
+                        jsonify({"error": "任务中包含Android用例，但未配置默认执行设备"}),
+                        400,
+                    )
+                config["deviceSerial"] = device.get("serial")
+
             # 按每个用例所属的项目+环境，各自组装按域名区分的Authorization配置和登录态Cookie
             # 分别受任务设置中"是否使用Authorization"/"是否使用登录态"开关控制，默认均为使用
+            # （仅Web用例需要，Android用例没有浏览器上下文的概念）
             use_authorization = settings.get("useAuthorization", True)
             use_login_state = settings.get("useLoginState", True)
-            for case in testcases:
+            for case in web_cases:
                 case_environment = config.get("executeEnvironment") or case.get(
                     "environment", ""
                 )
@@ -2277,9 +2344,9 @@ def execute_task(task_id):
                     else []
                 )
 
-            # 检查所有用例是否包含登录按钮XPath或login_website操作（需要禁用认证信息）
+            # 检查Web用例是否包含登录按钮XPath或login_website操作（需要禁用认证信息）
             has_login = False
-            for case in testcases:
+            for case in web_cases:
                 for step in case.get("testcase_step", []):
                     step_xpath = step.get("xpath", "")
                     step_operate = step.get("operate", "")
@@ -2291,7 +2358,7 @@ def execute_task(task_id):
 
             if has_login:
                 logger.info("检测到任务中的用例包含登录相关操作，禁用认证信息配置")
-                for case in testcases:
+                for case in web_cases:
                     case["_authProfiles"] = []
                     case["_loginStateCookies"] = []
 
@@ -2326,16 +2393,85 @@ def execute_task(task_id):
                 execute_batch_test_cases,
                 execute_batch_test_cases_parallel,
             )
+            from mobile_executor import execute_batch_test_cases_mobile
 
             try:
-                if config.get("enableMultiThread", False):
-                    logger.info(f"任务 '{task['name']}' 使用多线程并行执行模式")
-                    batch_report = asyncio.run(
-                        execute_batch_test_cases_parallel(testcases, config)
+                sub_reports = []
+
+                if web_cases:
+                    if config.get("enableMultiThread", False):
+                        logger.info(f"任务 '{task['name']}' Web用例使用多线程并行执行模式")
+                        sub_reports.append(
+                            asyncio.run(execute_batch_test_cases_parallel(web_cases, config))
+                        )
+                    else:
+                        logger.info(f"任务 '{task['name']}' Web用例使用顺序执行模式")
+                        sub_reports.append(
+                            asyncio.run(execute_batch_test_cases(web_cases, config))
+                        )
+
+                if android_cases:
+                    logger.info(f"任务 '{task['name']}' Android用例使用顺序执行模式")
+                    sub_reports.append(
+                        asyncio.run(execute_batch_test_cases_mobile(android_cases, config))
                     )
+
+                if len(sub_reports) == 1:
+                    batch_report = sub_reports[0]
+                    batch_report["name"] = config["reportName"]
                 else:
-                    logger.info(f"任务 '{task['name']}' 使用顺序执行模式")
-                    batch_report = asyncio.run(execute_batch_test_cases(testcases, config))
+                    # 任务里混合了Web和Android用例：把两份汇总报告的步骤/用例合并成一份，
+                    # 通过率/状态基于合并后每个用例的步骤结果重新计算
+                    combined_steps = []
+                    combined_cases = []
+                    for r in sub_reports:
+                        combined_steps.extend(r.get("steps", []))
+                        combined_cases.extend(r.get("executed_cases", []))
+
+                    passed_cases = 0
+                    for case_info in combined_cases:
+                        case_steps = [
+                            s for s in combined_steps if s.get("case_id") == case_info.get("id")
+                        ]
+                        case_total = len(
+                            [s for s in case_steps if s.get("result") in ("success", "fail")]
+                        )
+                        case_failed = len(
+                            [s for s in case_steps if s.get("result") == "fail"]
+                        )
+                        if case_total > 0 and case_failed == 0:
+                            passed_cases += 1
+                    total_cases = len(combined_cases)
+                    failed_cases = total_cases - passed_cases
+                    if total_cases > 0 and passed_cases == total_cases:
+                        merged_status = "success"
+                    elif passed_cases > 0 and failed_cases > 0:
+                        merged_status = "partial"
+                    else:
+                        merged_status = "fail"
+                    merged_pass_rate = (
+                        int((passed_cases / total_cases) * 100) if total_cases > 0 else 0
+                    )
+
+                    batch_report = {
+                        "id": int(time.time()),
+                        "test_id": f"mixed_batch_{int(time.time())}",
+                        "name": config["reportName"],
+                        "time": min(r.get("time", "") for r in sub_reports),
+                        "status": merged_status,
+                        "pass_rate": merged_pass_rate,
+                        "duration": sub_reports[0].get("duration", "00:00"),
+                        "config": config,
+                        "batch_info": {
+                            "total_cases": total_cases,
+                            "case_ids": [c.get("id") for c in combined_cases],
+                            "case_names": [c.get("name") for c in combined_cases],
+                            "execution_mode": "mixed",
+                        },
+                        "steps": combined_steps,
+                        "executed_cases": combined_cases,
+                        "description": config.get("description", ""),
+                    }
 
                 # 使用相同的报告ID，覆盖之前的"执行中"报告
                 batch_report["id"] = temp_report_id
@@ -3313,6 +3449,147 @@ def test_database_connection():
     except Exception as e:
         logger.error(f"测试数据库连接失败: {str(e)}")
         return jsonify({"success": False, "error": str(e)})
+
+
+# ==================== 移动端设备管理 API ====================
+DEVICES_FILE = "devices.json"
+
+
+def load_devices():
+    """加载移动端设备列表"""
+    try:
+        if os.path.exists(DEVICES_FILE):
+            with open(DEVICES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return []
+    except Exception as e:
+        logger.error(f"加载设备列表失败: {str(e)}")
+        return []
+
+
+def save_devices(devices):
+    """保存移动端设备列表"""
+    try:
+        with open(DEVICES_FILE, "w", encoding="utf-8") as f:
+            json.dump(devices, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"保存设备列表失败: {str(e)}")
+        return False
+
+
+@app.route("/api/devices", methods=["GET"])
+def get_devices():
+    """获取移动端设备列表"""
+    try:
+        devices = load_devices()
+        return jsonify({"success": True, "devices": devices})
+    except Exception as e:
+        logger.error(f"获取设备列表失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/devices", methods=["POST"])
+def add_device():
+    """新增移动端设备"""
+    try:
+        data = request.get_json()
+        name = data.get("name")
+        platform = data.get("platform", "android")
+        serial = data.get("serial")
+
+        if not name:
+            return jsonify({"success": False, "error": "设备名称不能为空"}), 400
+        if platform != "android":
+            return jsonify({"success": False, "error": "暂时只支持 Android 设备"}), 400
+        if not serial:
+            return jsonify({"success": False, "error": "请填写设备序列号/连接地址"}), 400
+
+        devices = load_devices()
+        if any(d.get("serial") == serial for d in devices):
+            return jsonify({"success": False, "error": "该设备序列号已存在"}), 400
+
+        new_id = max((d.get("id", 0) for d in devices), default=0) + 1
+        new_device = {
+            "id": new_id,
+            "name": name,
+            "platform": platform,
+            "serial": serial,
+            "project": data.get("project") or "",
+            "description": data.get("description", ""),
+            "createTime": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        devices.append(new_device)
+
+        if save_devices(devices):
+            logger.info(f"新增设备成功: {name} ({serial})")
+            return jsonify({"success": True, "device": new_device})
+        else:
+            return jsonify({"success": False, "error": "保存设备失败"}), 500
+    except Exception as e:
+        logger.error(f"新增设备失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/devices/<int:device_id>", methods=["PUT"])
+def update_device(device_id):
+    """编辑移动端设备"""
+    try:
+        data = request.get_json()
+        name = data.get("name")
+        platform = data.get("platform", "android")
+        serial = data.get("serial")
+
+        if not name:
+            return jsonify({"success": False, "error": "设备名称不能为空"}), 400
+        if platform != "android":
+            return jsonify({"success": False, "error": "暂时只支持 Android 设备"}), 400
+        if not serial:
+            return jsonify({"success": False, "error": "请填写设备序列号/连接地址"}), 400
+
+        devices = load_devices()
+        device = next((d for d in devices if d.get("id") == device_id), None)
+        if device is None:
+            return jsonify({"success": False, "error": "设备不存在"}), 404
+
+        if any(d.get("serial") == serial and d.get("id") != device_id for d in devices):
+            return jsonify({"success": False, "error": "该设备序列号已存在"}), 400
+
+        device["name"] = name
+        device["platform"] = platform
+        device["serial"] = serial
+        device["project"] = data.get("project") or ""
+        device["description"] = data.get("description", "")
+
+        if save_devices(devices):
+            logger.info(f"编辑设备成功: {name} ({serial})")
+            return jsonify({"success": True, "device": device})
+        else:
+            return jsonify({"success": False, "error": "保存设备失败"}), 500
+    except Exception as e:
+        logger.error(f"编辑设备失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/devices/<int:device_id>", methods=["DELETE"])
+def delete_device(device_id):
+    """删除移动端设备"""
+    try:
+        devices = load_devices()
+        device = next((d for d in devices if d.get("id") == device_id), None)
+        if device is None:
+            return jsonify({"success": False, "error": "设备不存在"}), 404
+
+        devices = [d for d in devices if d.get("id") != device_id]
+
+        if save_devices(devices):
+            logger.info(f"删除设备成功: {device.get('name')}")
+            return jsonify({"success": True, "message": "设备删除成功"})
+        else:
+            return jsonify({"success": False, "error": "删除设备失败"}), 500
+    except Exception as e:
+        logger.error(f"删除设备失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ==================== 测试用例列表 API ====================

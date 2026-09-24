@@ -71,6 +71,7 @@ import {
   AppsOutline, // 添加项目管理图标
   ServerOutline, // 添加环境管理图标
   FileTrayStackedOutline, // 添加数据管理图标
+  PhonePortraitOutline, // 添加设备管理图标
 } from "@vicons/ionicons5";
 import DataTableComponent from "./components/DataTableComponent.vue";
 
@@ -139,6 +140,11 @@ export default defineComponent({
         icon: renderIcon(FileTrayStackedOutline),
       },
       {
+        label: "设备管理",
+        key: "device-management",
+        icon: renderIcon(PhonePortraitOutline),
+      },
+      {
         label: "日志查询",
         key: "logs",
         icon: renderIcon(DocumentAttachOutline),
@@ -176,6 +182,8 @@ export default defineComponent({
         activeKey.value = "env-management";
       } else if (path.startsWith("/database-management")) {
         activeKey.value = "database-management";
+      } else if (path.startsWith("/device-management")) {
+        activeKey.value = "device-management";
       }
     }
 

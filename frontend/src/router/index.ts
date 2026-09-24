@@ -93,6 +93,12 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../components/DatabaseManage.vue"),
     meta: { title: "自动化测试平台 - 数据管理" },
   },
+  {
+    path: "/device-management",
+    name: "DeviceManagement",
+    component: () => import("../components/DeviceManage.vue"),
+    meta: { title: "自动化测试平台 - 设备管理" },
+  },
 ];
 
 const router = createRouter({

@@ -52,6 +52,15 @@
         />
       </n-form-item>
 
+      <n-form-item label="默认设备">
+        <n-select
+          v-model:value="settingsForm.defaultDevice"
+          :options="deviceOptions"
+          placeholder="请选择Android执行设备（移动端用例需要）"
+          clearable
+        />
+      </n-form-item>
+
       <n-form-item label="使用Authorization">
         <n-select
           v-model:value="settingsForm.useAuthorization"
@@ -101,6 +110,10 @@
             <n-text strong>{{
               getEnvironmentDisplayText(settingsForm.defaultEnvironment)
             }}</n-text>
+          </div>
+          <div>
+            默认设备:
+            <n-text strong>{{ getDeviceLabel(settingsForm.defaultDevice) }}</n-text>
           </div>
           <div>
             使用Authorization:
@@ -171,12 +184,14 @@ const {
   useAuthorizationOptions,
   useLoginStateOptions,
   environmentOptions,
+  deviceOptions,
 
   getBrowserLabel,
   getHeadlessDisplayText,
   getScreenshotDisplayText,
   getMultiThreadDisplayText,
   getEnvironmentDisplayText,
+  getDeviceLabel,
   getUseAuthorizationDisplayText,
   getUseLoginStateDisplayText,
 

@@ -356,5 +356,218 @@
       }
     ],
     "description": "任务: 测试 - 自动执行 2 个用例"
+  },
+  {
+    "id": 1790141027,
+    "test_id": 3,
+    "name": "安卓端登录成功",
+    "time": "2026-09-23 13:23:47",
+    "status": "fail",
+    "pass_rate": 0,
+    "duration": "00:03",
+    "config": {
+      "browser": "msedge",
+      "headless": false,
+      "saveScreenshots": true,
+      "enableMultiThread": false,
+      "clientAuthToken": "",
+      "adminAuthToken": "",
+      "privateAuthToken": "",
+      "executeEnvironment": "test环境",
+      "authProfiles": [
+        {
+          "name": "test_Authorization",
+          "domains": [
+            "mysql_value",
+            "https://test-esp.wdsheng.com/"
+          ],
+          "token": "123"
+        }
+      ],
+      "loginStateCookies": []
+    },
+    "steps": [
+      {
+        "case_id": 3,
+        "case_name": "安卓端登录成功",
+        "step_number": 1,
+        "action": "launch_app",
+        "value": "com.wlit.esp",
+        "describe": "打开万大圣app",
+        "result": "fail",
+        "details": {
+          "success": false,
+          "error": "未实现的操作类型: launch_app"
+        }
+      }
+    ],
+    "executed_cases": [
+      {
+        "id": 3,
+        "name": "安卓端登录成功"
+      }
+    ]
+  },
+  {
+    "id": 1790141375,
+    "test_id": 3,
+    "name": "安卓端登录成功",
+    "time": "2026-09-23 13:29:35",
+    "status": "fail",
+    "pass_rate": 0,
+    "duration": "00:00",
+    "config": {
+      "browser": "msedge",
+      "headless": false,
+      "saveScreenshots": true,
+      "enableMultiThread": false,
+      "clientAuthToken": "",
+      "adminAuthToken": "",
+      "privateAuthToken": "",
+      "executeEnvironment": "test环境",
+      "deviceSerial": "PNNBNJ7TRKCA4TYT"
+    },
+    "steps": [
+      {
+        "case_id": 3,
+        "case_name": "安卓端登录成功",
+        "step_number": 1,
+        "action": "设备连接",
+        "value": "",
+        "describe": "设备连接失败: No module named 'airtest'",
+        "result": "fail",
+        "details": {
+          "error": "No module named 'airtest'"
+        }
+      }
+    ],
+    "executed_cases": [
+      {
+        "id": 3,
+        "name": "安卓端登录成功"
+      }
+    ]
+  },
+  {
+    "id": 1790141535,
+    "test_id": 3,
+    "name": "安卓端登录成功",
+    "time": "2026-09-23 13:32:15",
+    "status": "fail",
+    "pass_rate": 0,
+    "duration": "00:00",
+    "config": {
+      "browser": "msedge",
+      "headless": false,
+      "saveScreenshots": true,
+      "enableMultiThread": false,
+      "clientAuthToken": "",
+      "adminAuthToken": "",
+      "privateAuthToken": "",
+      "executeEnvironment": "test环境",
+      "deviceSerial": "PNNBNJ7TRKCA4TYT"
+    },
+    "steps": [
+      {
+        "case_id": 3,
+        "case_name": "安卓端登录成功",
+        "step_number": 1,
+        "action": "设备连接",
+        "value": "",
+        "describe": "设备连接失败: No module named 'airtest'",
+        "result": "fail",
+        "details": {
+          "error": "No module named 'airtest'"
+        }
+      }
+    ],
+    "executed_cases": [
+      {
+        "id": 3,
+        "name": "安卓端登录成功"
+      }
+    ]
+  },
+  {
+    "id": 1790142659,
+    "test_id": 3,
+    "name": "安卓端登录成功",
+    "time": "2026-09-23 13:50:59",
+    "status": "success",
+    "pass_rate": 100,
+    "duration": "00:26",
+    "config": {
+      "browser": "msedge",
+      "headless": false,
+      "saveScreenshots": true,
+      "enableMultiThread": false,
+      "clientAuthToken": "",
+      "adminAuthToken": "",
+      "privateAuthToken": "",
+      "executeEnvironment": "test环境",
+      "deviceSerial": "PNNBNJ7TRKCA4TYT"
+    },
+    "steps": [
+      {
+        "case_id": 3,
+        "case_name": "安卓端登录成功",
+        "step_number": 1,
+        "action": "启动App",
+        "value": "com.wlit.esp",
+        "describe": "打开万大圣app",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790142678_launch_app.png",
+          "success": true
+        }
+      }
+    ],
+    "executed_cases": [
+      {
+        "id": 3,
+        "name": "安卓端登录成功"
+      }
+    ]
+  },
+  {
+    "id": 1790142722,
+    "test_id": 3,
+    "name": "安卓端登录成功",
+    "time": "2026-09-23 13:52:02",
+    "status": "success",
+    "pass_rate": 100,
+    "duration": "00:06",
+    "config": {
+      "browser": "msedge",
+      "headless": false,
+      "saveScreenshots": true,
+      "enableMultiThread": false,
+      "clientAuthToken": "",
+      "adminAuthToken": "",
+      "privateAuthToken": "",
+      "executeEnvironment": "test环境",
+      "deviceSerial": "PNNBNJ7TRKCA4TYT"
+    },
+    "steps": [
+      {
+        "case_id": 3,
+        "case_name": "安卓端登录成功",
+        "step_number": 1,
+        "action": "启动App",
+        "value": "com.wlit.esp",
+        "describe": "打开万大圣app",
+        "result": "success",
+        "details": {
+          "screenshot": "screenshots/1790142727_launch_app.png",
+          "success": true
+        }
+      }
+    ],
+    "executed_cases": [
+      {
+        "id": 3,
+        "name": "安卓端登录成功"
+      }
+    ]
   }
 ]

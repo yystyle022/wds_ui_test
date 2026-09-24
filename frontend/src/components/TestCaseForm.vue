@@ -40,6 +40,13 @@
               clearable
             />
           </n-form-item-gi>
+          <n-form-item-gi label="平台" path="platform">
+            <n-select
+              v-model:value="form.platform"
+              :options="platformOptions"
+              @update:value="handlePlatformChange"
+            />
+          </n-form-item-gi>
         </n-grid>
         <n-form-item label="用例步骤" path="steps">
           <div class="steps-scroll-container">
@@ -97,9 +104,26 @@
                   class="step-field"
                 >
                   <label class="step-label">网址或者元素</label>
+                  <!-- 图像识别：显示图片上传 -->
+                  <div v-if="step.locateType === 'image'" class="image-upload-container">
+                    <n-upload
+                      accept="image/*"
+                      :max="1"
+                      :default-file-list="step.imageFile ? [{ id: 'current', name: step.imageFile.name, status: 'finished' }] : []"
+                      @change="(options) => handleImageUpload(step, options)"
+                    >
+                      <n-button>上传截图</n-button>
+                    </n-upload>
+                    <div style="font-size: 12px; color: #666; margin-top: 4px">
+                      上传要点击的元素截图（支持 PNG/JPG），Airtest 会在屏幕上识别并点击
+                    </div>
+                    <div v-if="step.imagePreview" style="margin-top: 8px">
+                      <img :src="step.imagePreview" style="max-width: 200px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;" />
+                    </div>
+                  </div>
                   <!-- 如果是需要定位元素的操作且定位方式为XPath/CSS，显示元素选择器和手动输入 -->
                   <div
-                    v-if="
+                    v-else-if="
                       needsLocateType(step.action) &&
                       (!step.locateType ||
                         step.locateType === 'xpath' ||
@@ -134,7 +158,7 @@
                       元素: {{ step.selectedElement }}
                     </div>
                   </div>
-                  <!-- 其他定位方式（CSS/文本定位）或URL类型，直接显示输入框 -->
+                  <!-- 其他定位方式（CSS/文本定位/Poco）或URL类型，直接显示输入框 -->
                   <n-input
                     v-else
                     v-model:value="step.xpath"
@@ -289,6 +313,7 @@ import {
   NInput,
   NSelect,
   NSpace,
+  NUpload,
   FormInst,
   useMessage,
 } from "naive-ui";
@@ -299,7 +324,7 @@ interface StepItem {
   xpath: string;
   inputValue?: string;
   description: string;
-  // 定位方式：xpath | css | text，配合需要定位元素的操作类型使用
+  // 定位方式：xpath | css | text | poco | image
   locateType?: string;
   // 元素选择相关字段
   selectedElement?: string | null;
@@ -311,6 +336,10 @@ interface StepItem {
   varName?: string;
   // 引用其他用例专用字段
   referencedCaseId?: number | null;
+  // 图像识别相关字段
+  imageFile?: File | null;
+  imagePreview?: string | null;
+  imageBase64?: string | null; // 用于提交到后端
 }
 
 interface ElementData {
@@ -329,6 +358,7 @@ interface TestCaseFormData {
   page: string;
   name: string;
   type: string | null;
+  platform: string;
   steps: StepItem[];
 }
 
@@ -343,6 +373,7 @@ export default defineComponent({
     NInput,
     NSelect,
     NSpace,
+    NUpload,
   },
 
   setup() {
@@ -365,6 +396,7 @@ export default defineComponent({
       page: "",
       name: "",
       type: null,
+      platform: "web",
       steps: [],
     });
 
@@ -382,7 +414,12 @@ export default defineComponent({
       { label: "UI验证", value: "UI验证" },
     ];
 
-    const actionOptions = [
+    const platformOptions = [
+      { label: "Web", value: "web" },
+      { label: "Android", value: "android" },
+    ];
+
+    const webActionOptions = [
       { label: "引用其他用例", value: "reference_testcase" },
       { label: "打开网址", value: "open_url" },
       { label: "点击元素", value: "click" },
@@ -395,12 +432,43 @@ export default defineComponent({
       { label: "验证获取的变量值", value: "verify_variable_value" },
     ];
 
+    const androidActionOptions = [
+      { label: "引用其他用例", value: "reference_testcase" },
+      { label: "启动App", value: "launch_app" },
+      { label: "点击元素", value: "click" },
+      { label: "输入内容", value: "input" },
+      { label: "滑动", value: "swipe" },
+      { label: "等待时长", value: "wait" },
+      { label: "检查元素存在", value: "check_element_exists" },
+      { label: "检查元素不存在", value: "check_element_not_exists" },
+      { label: "获取元素的文案", value: "get_element_text" },
+      { label: "验证元素的值", value: "verify_element_value" },
+      { label: "验证获取的变量值", value: "verify_variable_value" },
+    ];
+
+    const actionOptions = computed(() =>
+      form.value.platform === "android" ? androidActionOptions : webActionOptions
+    );
+
     // 需要选择"定位方式"（二级菜单）的操作类型：XPath 或 其他定位方式
-    const locateTypeOptions = [
+    const webLocateTypeOptions = [
       { label: "XPath", value: "xpath" },
       { label: "CSS选择器", value: "css" },
       { label: "文本定位", value: "text" },
     ];
+    const androidLocateTypeOptions = [
+      { label: "Poco选择器", value: "poco" },
+      { label: "图像识别(Airtest)", value: "image" },
+    ];
+
+    const locateTypeOptions = computed(() =>
+      form.value.platform === "android" ? androidLocateTypeOptions : webLocateTypeOptions
+    );
+
+    const handlePlatformChange = () => {
+      // Web/Android 的操作类型和定位方式完全不同，切换平台后旧步骤大概率不再合法，直接清空
+      form.value.steps = [];
+    };
 
     const needsLocateType = (action: string): boolean => {
       const locateActions = [
@@ -420,12 +488,16 @@ export default defineComponent({
       needsLocateType(action) &&
       !["input", "get_element_text", "verify_element_value"].includes(action);
 
-    // 切换定位方式后，旧的定位值（XPath/CSS/文本）不再适用，清空输入框和已选元素
+    // 切换定位方式后，旧的定位值（XPath/CSS/文本/图片）不再适用，清空输入框和已选元素
     const onLocateTypeChange = (step: StepItem) => {
       step.xpath = "";
       step.selectedElement = null;
       step.elementName = "";
       step.element_id = undefined;
+      // 清空图片相关字段
+      step.imageFile = null;
+      step.imagePreview = null;
+      step.imageBase64 = null;
       // 定位方式变了，之前缓存的元素选项（按旧定位方式过滤）已不适用，需清除
       stepElementOptions.value.delete(step);
     };
@@ -555,6 +627,10 @@ export default defineComponent({
 
     const getXPathPlaceholder = (action: string, locateType?: string) => {
       if (needsLocateType(action)) {
+        if (locateType === "image")
+          return "图像识别模式，请上传截图";
+        if (locateType === "poco")
+          return "请输入Poco选择器，如 text=登录;type=android.widget.Button";
         if (locateType === "css") return "请输入CSS选择器";
         if (locateType === "text") return "请输入元素文本内容";
         return "请输入元素XPath";
@@ -563,9 +639,37 @@ export default defineComponent({
       const placeholderMap: Record<string, string> = {
         open_url: "请输入网址",
         wait: "请输入等待时长（秒）",
+        launch_app: "请输入App包名，如 com.example.app",
+        swipe: "请输入滑动方向：up/down/left/right",
       };
 
       return placeholderMap[action] || "请输入元素XPath";
+    };
+
+    // 处理图片上传
+    const handleImageUpload = (step: StepItem, options: any) => {
+      const { fileList } = options;
+
+      if (fileList && fileList.length > 0) {
+        const file = fileList[0].file;
+        if (!file) return;
+
+        // 保存文件对象
+        step.imageFile = file;
+
+        // 生成预览图
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          step.imagePreview = e.target?.result as string;
+          step.imageBase64 = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // 清空图片
+        step.imageFile = null;
+        step.imagePreview = null;
+        step.imageBase64 = null;
+      }
     };
 
     const makeEmptyStep = (stepNo: number): StepItem => ({
@@ -574,7 +678,7 @@ export default defineComponent({
       xpath: "",
       inputValue: "",
       description: "",
-      locateType: "xpath",
+      locateType: form.value.platform === "android" ? "poco" : "xpath",
       selectedElement: null,
       varName: "",
       referencedCaseId: null,
@@ -644,6 +748,7 @@ export default defineComponent({
           page: data.page || "",
           name: data.name || "",
           type: data.type || null,
+          platform: data.platform || "web",
           steps: data.testcase_step
             ? data.testcase_step.map((step: any) => {
                 const stepItem: any = {
@@ -657,6 +762,10 @@ export default defineComponent({
                   expectedValue: step.expected_value || "",
                   varName: step.var_name || "",
                   referencedCaseId: step.referenced_case_id ?? null,
+                  // 图像识别相关
+                  imageFile: null,
+                  imagePreview: step.image_data || null,
+                  imageBase64: step.image_data || null,
                 };
 
                 stepItem.xpath = step.xpath || "";
@@ -698,7 +807,7 @@ export default defineComponent({
         operate: step.action,
         input_value: step.inputValue || "",
         describe: step.description,
-        // 定位方式（xpath/css/text）
+        // 定位方式（xpath/css/text/poco/image）
         locate_type: step.locateType || "xpath",
         // 验证元素值专用字段
         expected_value: step.expectedValue || "",
@@ -708,6 +817,11 @@ export default defineComponent({
         referenced_case_id:
           step.action === "reference_testcase" ? step.referencedCaseId : null,
       };
+
+      // 如果是图像识别，保存 base64 图片数据
+      if (step.locateType === "image" && step.imageBase64) {
+        stepData.image_data = step.imageBase64;
+      }
 
       stepData.xpath = step.xpath || "";
 
@@ -749,6 +863,7 @@ export default defineComponent({
           page: form.value.page,
           name: form.value.name,
           type: form.value.type,
+          platform: form.value.platform,
           testcase_step: form.value.steps.map(buildTestcaseStep),
         };
 
@@ -801,6 +916,8 @@ export default defineComponent({
       isEditMode,
       rules,
       typeOptions,
+      platformOptions,
+      handlePlatformChange,
       actionOptions,
       locateTypeOptions,
       projectOptions,
@@ -813,6 +930,7 @@ export default defineComponent({
       getReferencedCaseOptions,
       loadReferencedCaseOptions,
       getXPathPlaceholder,
+      handleImageUpload,
       addStep,
       insertStepAfter,
       removeStep,
@@ -1000,6 +1118,14 @@ export default defineComponent({
 }
 
 .xpath-selection :deep(.n-select) {
+  width: 100%;
+}
+
+.image-upload-container {
+  width: 100%;
+}
+
+.image-upload-container :deep(.n-upload) {
   width: 100%;
 }
 

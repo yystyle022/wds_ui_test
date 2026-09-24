@@ -42,6 +42,14 @@
               clearable
             />
           </n-form-item>
+          <n-form-item label="端" :show-label="true">
+            <n-select
+              v-model:value="searchForm.platform"
+              :options="platformOptions"
+              placeholder="请选择平台"
+              clearable
+            />
+          </n-form-item>
         </div>
 
         <!-- 按钮行 -->
@@ -297,7 +305,15 @@
 
 <script lang="ts">
 import type { DataTableColumns, DataTableRowKey } from "naive-ui";
-import { defineComponent, ref, onMounted, h, Fragment, watch } from "vue";
+import {
+  defineComponent,
+  defineAsyncComponent,
+  ref,
+  onMounted,
+  h,
+  Fragment,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import { useSettings } from "../composables/useSettings";
@@ -382,8 +398,10 @@ export default defineComponent({
     NDivider,
     NTable,
     NTooltip,
-    VariableHighlightInput: () => import("./VariableHighlightInput.vue"),
-    SettingsModal: () => import("./SettingsModal.vue"),
+    VariableHighlightInput: defineAsyncComponent(
+      () => import("./VariableHighlightInput.vue")
+    ),
+    SettingsModal: defineAsyncComponent(() => import("./SettingsModal.vue")),
   },
 
   setup() {
@@ -399,12 +417,14 @@ export default defineComponent({
       page: string;
       name: string;
       type: string | null;
+      platform: string | null;
     }>({
       project: null,
       module: "",
       page: "",
       name: "",
       type: null,
+      platform: null,
     });
 
     // 报告名称设置相关
@@ -849,6 +869,7 @@ export default defineComponent({
         page: "",
         name: "",
         type: null,
+        platform: null,
       };
       fetchData();
     };
@@ -858,6 +879,11 @@ export default defineComponent({
       { label: "分流程", value: "分流程" },
       { label: "异常流程", value: "异常流程" },
       { label: "UI验证", value: "UI验证" },
+    ];
+
+    const platformOptions = [
+      { label: "Web", value: "web" },
+      { label: "Android", value: "android" },
     ];
 
     const projectOptions = ref<{ label: string; value: string }[]>([]);
@@ -1044,6 +1070,16 @@ export default defineComponent({
         { title: "所属模块", key: "module", align: "center", width: 120 },
         { title: "用例概述", key: "name", align: "center", width: 300 },
         { title: "用例类型", key: "type", align: "center", width: 100 },
+        {
+          title: "端",
+          key: "platform",
+          align: "center",
+          width: 80,
+          render(row: any) {
+            const platform = row.platform || "web";
+            return platform === "android" ? "Android" : "Web";
+          },
+        },
         {
           title: "操作",
           key: "action",
@@ -1257,6 +1293,7 @@ export default defineComponent({
       handleSearch,
       handleReset,
       typeOptions,
+      platformOptions,
       projectOptions,
       handleAdd,
       showViewModal,

@@ -6,3 +6,5 @@ numpy==1.26.4
 requests==2.32.3
 PyMySQL==1.1.1
 psycopg2-binary==2.9.9
+airtest==1.3.4
+pocoui==1.0.94

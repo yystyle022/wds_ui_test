@@ -4,6 +4,7 @@
   "saveScreenshots": true,
   "enableMultiThread": false,
   "defaultEnvironment": "test环境",
+  "defaultDevice": 1,
   "useAuthorization": true,
   "useLoginState": true
 }

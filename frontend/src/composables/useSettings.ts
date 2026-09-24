@@ -8,6 +8,7 @@ export interface SettingsForm {
   saveScreenshots: string;
   enableMultiThread: string;
   defaultEnvironment: string;
+  defaultDevice: number | null;
   useAuthorization: string;
   useLoginState: string;
 }
@@ -26,6 +27,7 @@ function createDefaultForm(): SettingsForm {
     saveScreenshots: "false",
     enableMultiThread: "false",
     defaultEnvironment: "生产环境",
+    defaultDevice: null,
     useAuthorization: "true",
     useLoginState: "true",
   };
@@ -38,6 +40,7 @@ function createInstance(scope: SettingsScope) {
   const showSettingsModal = ref(false);
   const settingsForm = reactive<SettingsForm>(createDefaultForm());
   const environmentOptions = ref<{ label: string; value: string }[]>([]);
+  const deviceOptions = ref<{ label: string; value: number }[]>([]);
   let messageApi: any = null;
 
   const browserOptions = [
@@ -94,6 +97,12 @@ function createInstance(scope: SettingsScope) {
     return value || "生产环境";
   };
 
+  const getDeviceLabel = (value: number | null) => {
+    if (!value) return "未设置";
+    const option = deviceOptions.value.find((opt) => opt.value === value);
+    return option ? option.label : "未设置";
+  };
+
   const getUseAuthorizationDisplayText = (value: string) => {
     return value === "false" ? "不使用" : "使用";
   };
@@ -118,9 +127,26 @@ function createInstance(scope: SettingsScope) {
     }
   };
 
+  // 获取移动端设备列表（用于"默认设备"下拉选项）
+  const fetchDevices = async () => {
+    try {
+      const response = await axios.get("/api/devices");
+      if (response.data.success) {
+        const devices = response.data.devices || [];
+        deviceOptions.value = devices.map((d: any) => ({
+          label: `${d.name} (${d.serial})`,
+          value: d.id,
+        }));
+      }
+    } catch (error) {
+      console.error("加载设备列表失败:", error);
+    }
+  };
+
   const loadSettings = async () => {
     try {
       await fetchEnvironments();
+      await fetchDevices();
       const response = await axios.get(apiPath);
       if (response.data) {
         Object.assign(settingsForm, {
@@ -131,6 +157,7 @@ function createInstance(scope: SettingsScope) {
             ? "true"
             : "false",
           defaultEnvironment: response.data.defaultEnvironment || "生产环境",
+          defaultDevice: response.data.defaultDevice ?? null,
           useAuthorization:
             response.data.useAuthorization === false ? "false" : "true",
           useLoginState:
@@ -160,6 +187,7 @@ function createInstance(scope: SettingsScope) {
         saveScreenshots: settingsForm.saveScreenshots === "true",
         enableMultiThread: settingsForm.enableMultiThread === "true",
         defaultEnvironment: settingsForm.defaultEnvironment,
+        defaultDevice: settingsForm.defaultDevice,
         useAuthorization: settingsForm.useAuthorization === "true",
         useLoginState: settingsForm.useLoginState === "true",
       };
@@ -191,6 +219,7 @@ function createInstance(scope: SettingsScope) {
     useAuthorizationOptions,
     useLoginStateOptions,
     environmentOptions,
+    deviceOptions,
 
     // 辅助函数
     getBrowserLabel,
@@ -198,9 +227,11 @@ function createInstance(scope: SettingsScope) {
     getScreenshotDisplayText,
     getMultiThreadDisplayText,
     getEnvironmentDisplayText,
+    getDeviceLabel,
     getUseAuthorizationDisplayText,
     getUseLoginStateDisplayText,
     fetchEnvironments,
+    fetchDevices,
 
     // 操作函数
     handleSettings,
